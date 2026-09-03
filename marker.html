@@ -2,243 +2,162 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-<title>Heritage AR Guide — Marker Mode</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Heritage AR Guide — Marker AR</title>
 
-<!-- A-Frame + AR.js — using the version pairing AR.js's own docs recommend.
-     The old jsdelivr ar.js@2.2.4 build has known detection bugs with
-     newer A-Frame versions. This raw.githack build tracks the latest
-     stable AR.js release and is the pairing most tutorials/demos use. -->
-<script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+<!--
+  INTE 42312 requirement mapping (marker-based tracking requirement):
+  A-Frame 1.6.0 + AR.js 3.4.7 is the officially documented compatible pairing.
+-->
+<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.7/aframe/build/aframe-ar.js"></script>
 
 <style>
-  :root{ --maroon:#6e1f2a; --gold:#c9a13a; --cream:#f4ecdc; }
-  html,body{ margin:0; padding:0; height:100%; overflow:hidden; font-family:'Inter',sans-serif; background:#000; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:100%; height:100%; overflow:hidden; background:#000; font-family:'Inter',Arial,sans-serif; }
+  a-scene { position:fixed; inset:0; z-index:1; }
 
-  #ui{
-    position:fixed; inset:0; pointer-events:none; z-index:20;
-  }
-  #topbar{
+  #ui { position:fixed; inset:0; z-index:20; pointer-events:none; }
+
+  #topbar {
     position:absolute; top:0; left:0; right:0;
-    display:flex; align-items:center; justify-content:space-between;
-    padding: max(14px, env(safe-area-inset-top)) 16px 14px;
-    background:linear-gradient(to bottom, rgba(20,10,8,0.55), transparent);
-    pointer-events:auto;
+    display:flex; justify-content:space-between; align-items:center;
+    padding: max(16px, env(safe-area-inset-top)) 16px 16px;
+    background:linear-gradient(to bottom, rgba(0,0,0,0.65), transparent);
   }
-  #topbar a{
-    color:#fff; text-decoration:none; font-size:13px; font-weight:600;
-    background:rgba(0,0,0,0.35); padding:8px 12px; border-radius:20px;
+  #home {
+    pointer-events:auto; color:#fff; text-decoration:none;
+    background:rgba(0,0,0,0.55); padding:9px 16px; border-radius:25px;
+    font-size:14px; font-weight:600;
   }
-  #hint{
-    color:#fff; font-size:12px; font-weight:500; text-align:right;
-    background:rgba(0,0,0,0.35); padding:8px 12px; border-radius:20px;
-    max-width:52%;
+  #status {
+    color:#fff; background:rgba(0,0,0,0.55); padding:9px 16px;
+    border-radius:25px; font-size:13px; font-weight:600;
   }
-  #controls{
+  #hint {
+    position:absolute; top:75px; left:50%; transform:translateX(-50%);
+    color:#fff; background:rgba(0,0,0,0.55); padding:9px 18px;
+    border-radius:20px; font-size:13px; text-align:center;
+  }
+  #controls {
     position:absolute; bottom:0; left:0; right:0;
     display:flex; justify-content:center; gap:12px;
-    padding: 18px 16px max(18px, env(safe-area-inset-bottom));
+    padding:16px 20px max(20px, env(safe-area-inset-bottom));
+    background:linear-gradient(to top, rgba(0,0,0,0.65), transparent);
     pointer-events:auto;
-    flex-wrap:wrap;
   }
-  button.pill{
-    border:none; border-radius:999px; padding:12px 18px;
-    background:rgba(255,255,255,0.15); color:#fff; font-size:13px; font-weight:600;
-    backdrop-filter: blur(8px);
-    cursor:pointer;
-    transition:all 0.3s;
-    border:1px solid rgba(255,255,255,0.1);
+  button.pill {
+    border:none; border-radius:30px; padding:12px 20px;
+    font-size:14px; font-weight:600; background:rgba(255,255,255,0.18);
+    color:#fff; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
   }
-  button.pill:active{ transform:scale(0.95); }
-  button.pill.active{
-    background:var(--gold);
-    color:#2a2320;
-    border-color:var(--gold);
-  }
-
-  #not-found-msg{
-    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-    background:rgba(0,0,0,0.7); color:#fff; padding:20px 24px; border-radius:12px;
-    font-size:14px; text-align:center; max-width:80%; display:none; pointer-events:none;
-    border:2px solid var(--gold);
-  }
-  #not-found-msg .small{ font-size:12px; color:var(--gold); margin-top:6px; display:block; }
+  button.pill.active { background:#c9a13a; color:#2a2320; }
 </style>
 </head>
 <body>
 
 <div id="ui">
   <div id="topbar">
-    <a href="index.html">← Home</a>
-    <div id="hint">🎯 Point at Hiro marker</div>
+    <a id="home" href="index.html">&larr; Home</a>
+    <div id="status">🎯 Point at HIRO marker</div>
   </div>
-
+  <div id="hint">🔍 Show the printed HIRO marker to see the artifact</div>
   <div id="controls">
-    <button class="pill active" id="audioBtn" onclick="toggleAudio()">🔊 Narration on</button>
-    <button class="pill" id="infoBtn" onclick="toggleInfo()">ℹ️ Artifact info</button>
-    <button class="pill" onclick="resetScene()">↺ Reset</button>
-  </div>
-
-  <div id="not-found-msg">
-    🔍 Show the HIRO marker on your screen
-    <span class="small">Keep the full square in frame, printed on paper works best</span>
+    <button id="infoBtn" class="pill" onclick="toggleInfo()">ℹ️ Artifact Info</button>
+    <button id="spinBtn" class="pill active" onclick="toggleSpin()">🔄 Auto-Rotate</button>
   </div>
 </div>
 
 <a-scene
   embedded
   vr-mode-ui="enabled: false"
-  renderer="logarithmicDepthBuffer: true; alpha: true"
-  arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; sourceWidth: 1280; sourceHeight: 960; displayWidth: 1280; displayHeight: 960;"
+  renderer="alpha: true; antialias: true; colorManagement: true"
+  arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
 >
 
   <a-assets>
-    <!-- Narration Audio -->
-    <audio id="narration" src="assets/audio/mask-narration.mp3" preload="auto"></audio>
+    <a-asset-item id="vase-model" src="assets/models/vase.glb"></a-asset-item>
   </a-assets>
 
-  <a-marker preset="hiro" id="hiroMarker" emitevents="true" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5">
+  <a-marker id="hiroMarker" preset="hiro" emitevents="true" smooth="true" smoothCount="5" smoothTolerance="0.01" smoothThreshold="5">
 
-    <!-- ========================================= -->
-    <!-- 3D Mask using Simple Geometry              -->
-    <!-- (No external model file needed)           -->
-    <!-- ========================================= -->
-    <a-entity
-      id="artifact"
-      position="0 0.5 0"
-      scale="0.2 0.2 0.2"
-      animation="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear"
-    >
-      <!-- Face shape (flat oval) -->
-      <a-entity position="0 0 0">
-        <a-entity geometry="primitive: sphere; radius: 0.3; segmentsHeight: 4; segmentsWidth: 6;"
-                  material="color: #8B4513; roughness: 0.5; metalness: 0.3;"
-                  position="0 0.05 0" scale="1 1.1 0.4">
-        </a-entity>
-        <!-- Eyes -->
-        <a-entity geometry="primitive: sphere; radius: 0.06;"
-                  material="color: #FFD700; emissive: #FFD700; emissiveIntensity: 0.3;"
-                  position="-0.15 0.1 0.15">
-        </a-entity>
-        <a-entity geometry="primitive: sphere; radius: 0.06;"
-                  material="color: #FFD700; emissive: #FFD700; emissiveIntensity: 0.3;"
-                  position="0.15 0.1 0.15">
-        </a-entity>
-        <!-- Mouth -->
-        <a-entity geometry="primitive: torus; radius: 0.08; tube: 0.02; thetaStart: 0; thetaLength: 180;"
-                  material="color: #8B0000;"
-                  position="0 -0.1 0.15" rotation="90 0 0">
-        </a-entity>
-        <!-- Nose -->
-        <a-entity geometry="primitive: cone; radius: 0.04; height: 0.08;"
-                  material="color: #A0522D;"
-                  position="0 -0.02 0.18" rotation="90 0 0">
-        </a-entity>
-        <!-- Head decorations -->
-        <a-entity geometry="primitive: cylinder; radius: 0.04; height: 0.15;"
-                  material="color: #FF6B6B;"
-                  position="0 0.25 0.05" rotation="90 0 0">
-        </a-entity>
-        <a-entity geometry="primitive: sphere; radius: 0.06;"
-                  material="color: #FFD700;"
-                  position="0 0.32 0.05">
-        </a-entity>
-      </a-entity>
-
-      <a-light type="point" intensity="0.9" position="0 1.2 0.6" color="#ffe6b0"></a-light>
+    <!-- Model 1 of 2: real, downloaded .glb — adjust the scale value
+         below once you see it render; start here and tweak up/down. -->
+    <a-entity id="artifact"
+              gltf-model="#vase-model"
+              position="0 0 0"
+              scale="0.3 0.3 0.3"
+              shadow="cast: true">
     </a-entity>
 
-    <!-- ========================================= -->
-    <!-- Info Label                                -->
-    <!-- ========================================= -->
-    <a-text id="infoText"
-      value="🎭 Raksha Mask — Kandyan tradition, 19th c. replica."
-      color="#f4ecdc" align="center" width="3" position="0 1.3 0" visible="false"
-      background="true" background-color="rgba(0,0,0,0.75)" border-radius="0.1" padding="0.2 0.3"
-      font-size="0.8"
-    ></a-text>
+    <a-text id="infoText" value="Porcelain Vase — Heritage Collection" color="#f4ecdc"
+            align="center" width="3" position="0 -0.45 0" visible="false"></a-text>
 
-    <!-- Lighting -->
-    <a-light type="ambient" intensity="0.6" color="#ffffff"></a-light>
+    <a-ring radius-inner="0.4" radius-outer="0.5" position="0 0 0" rotation="-90 0 0"
+            material="color:#c9a13a; opacity:0.35; transparent:true; side:double"></a-ring>
+
+    <a-light type="ambient" intensity="1" color="#ffffff"></a-light>
+    <a-light type="point" intensity="1.2" position="0 1.5 1" color="#ffe6b0"></a-light>
+
   </a-marker>
 
   <a-entity camera></a-entity>
+
 </a-scene>
 
 <script>
-  var marker = document.querySelector('#hiroMarker');
-  var notFoundMsg = document.querySelector('#not-found-msg');
-  var narration = document.querySelector('#narration');
-  var infoText = document.querySelector('#infoText');
-  var audioBtn = document.querySelector('#audioBtn');
-  var infoBtn = document.querySelector('#infoBtn');
+const marker   = document.querySelector('#hiroMarker');
+const status   = document.querySelector('#status');
+const hint     = document.querySelector('#hint');
+const infoText = document.querySelector('#infoText');
+const infoBtn  = document.querySelector('#infoBtn');
+const spinBtn  = document.querySelector('#spinBtn');
+const artifact = document.querySelector('#artifact');
 
-  var audioOn = true;
-  var infoOn = false;
-  var hasPlayed = false;
-  var visible = false;
+let infoVisible = false;
+let rotating = true;
 
-  // Marker Found - Play Narration
-  marker.addEventListener('markerFound', function() {
-    visible = true;
-    notFoundMsg.style.display = 'none';
-    document.getElementById('hint').textContent = '✅ Artifact detected!';
+// Log load success/failure so you can see in the console whether
+// vase.glb actually loaded, and what its real size/center looks like.
+artifact.addEventListener('model-loaded', (e) => {
+  console.log('✅ vase.glb loaded successfully', e.detail.model);
+});
+artifact.addEventListener('model-error', (e) => {
+  console.error('❌ Failed to load vase.glb — check the path assets/models/vase.glb exists', e.detail);
+});
 
-    if (audioOn && !hasPlayed) {
-      narration.currentTime = 0;
-      narration.play().catch(function(err) {
-        console.log('Audio autoplay blocked. User interaction needed.');
-      });
-      hasPlayed = true;
-    }
-  });
+marker.addEventListener('markerFound', () => {
+  status.textContent = '✅ Marker detected!';
+  status.style.background = 'rgba(0,130,50,0.85)';
+  hint.textContent = '🏺 Porcelain Vase is visible!';
+});
 
-  marker.addEventListener('markerLost', function() {
-    visible = false;
-    document.getElementById('hint').textContent = '🎯 Point at Hiro marker';
-  });
+marker.addEventListener('markerLost', () => {
+  status.textContent = '🎯 Point at HIRO marker';
+  status.style.background = 'rgba(0,0,0,0.55)';
+  hint.textContent = '🔍 Show the printed HIRO marker to see the artifact';
+});
 
-  setTimeout(function() {
-    if (!visible) {
-      notFoundMsg.style.display = 'block';
-    }
-  }, 3000);
+function toggleInfo() {
+  infoVisible = !infoVisible;
+  infoText.setAttribute('visible', infoVisible);
+  infoBtn.classList.toggle('active', infoVisible);
+}
 
-  function toggleAudio() {
-    audioOn = !audioOn;
-    audioBtn.textContent = audioOn ? '🔊 Narration on' : '🔇 Narration off';
-    audioBtn.classList.toggle('active', audioOn);
-    if (!audioOn) {
-      narration.pause();
-    } else if (visible && !hasPlayed) {
-      narration.currentTime = 0;
-      narration.play().catch(function(err) {});
-      hasPlayed = true;
-    }
+function toggleSpin() {
+  rotating = !rotating;
+  spinBtn.classList.toggle('active', rotating);
+  if (rotating) {
+    artifact.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear');
+  } else {
+    artifact.removeAttribute('animation');
   }
+}
 
-  function toggleInfo() {
-    infoOn = !infoOn;
-    infoText.setAttribute('visible', infoOn);
-    infoBtn.classList.toggle('active', infoOn);
-  }
+artifact.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear');
 
-  function resetScene() {
-    hasPlayed = false;
-    narration.pause();
-    narration.currentTime = 0;
-    infoOn = false;
-    infoText.setAttribute('visible', false);
-    infoBtn.classList.remove('active');
-    audioBtn.classList.add('active');
-    audioOn = true;
-    audioBtn.textContent = '🔊 Narration on';
-  }
-
-  window.toggleAudio = toggleAudio;
-  window.toggleInfo = toggleInfo;
-  window.resetScene = resetScene;
+window.toggleInfo = toggleInfo;
+window.toggleSpin = toggleSpin;
 </script>
 </body>
 </html>

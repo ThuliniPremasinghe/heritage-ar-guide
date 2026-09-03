@@ -68,8 +68,8 @@
 
   <div id="controls">
     <div class="row">
-      <button class="pill active" id="selectMask" onclick="selectArtifact('mask')">Place: Mask</button>
-      <button class="pill" id="selectStupa" onclick="selectArtifact('stupa')">Place: Stupa</button>
+      <button class="pill active" id="selectVase" onclick="selectArtifact('vase')">Place: Vase</button>
+      <button class="pill" id="selectRoom" onclick="selectArtifact('room')">Place: Porcelain Room</button>
     </div>
     <div class="row">
       <button class="pill" onclick="resetPlacedObjects()">↺ Reset exhibit</button>
@@ -102,16 +102,20 @@
 <script type="module">
 import * as THREE from 'three';
 import { ARButton } from 'three/addons/webxr/ARButton.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 /* ---------------------------------------------------------
-   State machine (per assignment requirement: multi-step
-   state management as part of the "complex interaction"
-   advanced feature).
-   idle -> reticle tracking a surface, nothing selected
-   dragging -> a placed artifact is currently being moved
+   INTE 42312 — Option B (Complex Interaction):
+   1) Multi-step state management: idle -> dragging -> idle
+   2) Drag-and-drop object manipulation: tap to place, tap an
+      existing object to pick it up, move phone to drag it,
+      tap again to drop it.
+   3) Physical collision detection between 3D elements: on
+      every frame, bounding boxes of all placed objects are
+      checked pairwise; overlapping objects flash red.
 --------------------------------------------------------- */
 let appState = 'idle';
-let currentArtifactType = 'mask'; // which prefab gets placed on next tap
+let currentArtifactType = 'vase'; // which prefab gets placed on next tap
 let selectedForDrag = null;       // the placed object currently being dragged
 
 let camera, scene, renderer;
@@ -121,7 +125,11 @@ let hitTestSource = null;
 let hitTestSourceRequested = false;
 
 const placedObjects = []; // { mesh, box3 }
-const clock = new THREE.Clock();
+const loader = new GLTFLoader();
+
+// Cache the loaded scenes once, then clone for each placement so we
+// don't re-download the .glb every time the user taps to place one.
+const modelCache = {}; // { vase: THREE.Object3D | null, room: THREE.Object3D | null }
 
 init();
 
@@ -170,52 +178,57 @@ function init() {
   window.addEventListener('resize', onWindowResize);
 
   renderer.setAnimationLoop(render);
+
+  // Preload both models up front so placement isn't delayed by network.
+  preloadModel('vase', 'assets/models/vase.glb');
+  preloadModel('room', 'assets/models/the_porcelain_room.glb');
 }
 
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-const loader = new GLTFLoader();
-
-function buildMask() {
-  const group = new THREE.Group();
+/* ---------------------------------------------------------
+   Model loading. Real .glb assets — cached once loaded, then
+   cloned for every new placement. Start scale values below are
+   guesses; adjust once you see how big each renders in AR —
+   the_porcelain_room.glb in particular may have been modelled
+   at full room scale, so it likely needs shrinking a lot more
+   than the vase to fit a tabletop.
+--------------------------------------------------------- */
+function preloadModel(key, path) {
   loader.load(
-    'assets/models/mask.glb',
+    path,
     (gltf) => {
-      gltf.scene.scale.set(0.3, 0.3, 0.3);
-      group.add(gltf.scene);
+      modelCache[key] = gltf.scene;
+      console.log(`✅ Loaded ${path}`);
+      updateHint(`Move your phone slowly to find a flat surface, then tap to place`);
     },
-    undefined, // progress callback, not needed
+    undefined,
     (error) => {
-      console.error('Failed to load mask.glb:', error);
+      console.error(`❌ Failed to load ${path} — check the file exists at that path`, error);
+      updateHint(`⚠️ Couldn't load ${path.split('/').pop()} — check console`);
     }
   );
-  group.userData.type = 'mask';
-  return group;
-}
-
-function buildStupa() {
-  const group = new THREE.Group();
-  const dome = new THREE.Mesh(
-    new THREE.SphereGeometry(0.09, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2),
-    new THREE.MeshStandardMaterial({ color: 0xf4ecdc, roughness: 0.5 })
-  );
-  const spire = new THREE.Mesh(
-    new THREE.ConeGeometry(0.02, 0.14, 8),
-    new THREE.MeshStandardMaterial({ color: 0xc9a13a, metalness: 0.4, roughness: 0.3 })
-  );
-  spire.position.y = 0.14;
-  group.add(dome, spire);
-  group.userData.type = 'stupa';
-  return group;
 }
 
 function makePrefab(type) {
-  return type === 'mask' ? buildMask() : buildStupa();
+  const source = modelCache[type];
+  if (!source) {
+    console.warn(`${type}.glb hasn't finished loading yet — try again in a moment.`);
+    return null;
+  }
+  const group = source.clone(true);
+  group.userData.type = type;
+  if (type === 'vase') {
+    group.scale.set(0.3, 0.3, 0.3);
+  } else if (type === 'room') {
+    // Likely a much bigger source scale — shrink hard to sit on a table.
+    group.scale.set(0.05, 0.05, 0.05);
+  }
+  return group;
 }
 
 window.selectArtifact = function (type) {
   currentArtifactType = type;
-  document.getElementById('selectMask').classList.toggle('active', type === 'mask');
-  document.getElementById('selectStupa').classList.toggle('active', type === 'stupa');
+  document.getElementById('selectVase').classList.toggle('active', type === 'vase');
+  document.getElementById('selectRoom').classList.toggle('active', type === 'room');
 };
 
 window.resetPlacedObjects = function () {
@@ -226,11 +239,7 @@ window.resetPlacedObjects = function () {
 };
 
 /* ---------------------------------------------------------
-   Placement: tap places a NEW artifact if the reticle is
-   visible and nothing is currently selected for drag.
-   If an existing placed object is tapped, it becomes the
-   drag target instead (state -> dragging) and a second tap
-   drops it (state -> idle).
+   Placement / drag state machine
 --------------------------------------------------------- */
 function onSelect() {
   if (selectedForDrag) {
@@ -253,6 +262,7 @@ function onSelect() {
   // otherwise place a brand-new artifact at the reticle
   if (reticle.visible) {
     const prefab = makePrefab(currentArtifactType);
+    if (!prefab) return;
     prefab.position.setFromMatrixPosition(reticle.matrix);
     scene.add(prefab);
     const entry = { mesh: prefab, box3: new THREE.Box3() };
@@ -261,13 +271,10 @@ function onSelect() {
 }
 
 function pickPlacedObject() {
-  // Simple heuristic: pick the placed object nearest the reticle position
-  // (stand-in for a full raycast against controller ray; keeps mobile
-  // tap-to-select reliable without extra input plumbing).
   if (!reticle.visible || placedObjects.length === 0) return null;
   const p = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
   let closest = null;
-  let closestDist = 0.12; // selection radius in meters
+  let closestDist = 0.15; // selection radius in meters
   for (const obj of placedObjects) {
     const d = obj.mesh.position.distanceTo(p);
     if (d < closestDist) {
@@ -279,10 +286,8 @@ function pickPlacedObject() {
 }
 
 /* ---------------------------------------------------------
-   Collision detection: on every frame, recompute bounding
-   boxes for all placed objects and flag any pair that
-   overlaps. The dragged object is blocked from settling on
-   top of another and flashes red while overlapping.
+   Collision detection: recompute bounding boxes every frame
+   and flag any overlapping pair.
 --------------------------------------------------------- */
 function updateCollisions() {
   placedObjects.forEach(o => o.box3.setFromObject(o.mesh));
@@ -302,16 +307,21 @@ function updateCollisions() {
 
 function setCollisionVisual(group, colliding) {
   group.traverse(child => {
-    if (child.isMesh) {
+    if (!child.isMesh || !child.material) return;
+    // Real glTF models can have multiple materials per mesh —
+    // handle both a single material and an array of materials safely.
+    const materials = Array.isArray(child.material) ? child.material : [child.material];
+    materials.forEach(mat => {
+      if (!mat.color) return; // some materials (e.g. certain shaders) have no .color
       if (colliding) {
-        if (!child.userData._origColor) {
-          child.userData._origColor = child.material.color.getHex();
+        if (mat.userData._origColor === undefined) {
+          mat.userData._origColor = mat.color.getHex();
         }
-        child.material.color.setHex(0xd93c3c);
-      } else if (child.userData._origColor !== undefined) {
-        child.material.color.setHex(child.userData._origColor);
+        mat.color.setHex(0xd93c3c);
+      } else if (mat.userData._origColor !== undefined) {
+        mat.color.setHex(mat.userData._origColor);
       }
-    }
+    });
   });
 }
 
@@ -351,9 +361,6 @@ function render(timestamp, frame) {
         reticle.visible = true;
         reticle.matrix.fromArray(pose.transform.matrix);
 
-        // While dragging, continuously move the selected object to
-        // wherever the reticle (i.e. the detected surface under the
-        // phone) currently is.
         if (appState === 'dragging' && selectedForDrag) {
           selectedForDrag.mesh.position.setFromMatrixPosition(reticle.matrix);
         }
