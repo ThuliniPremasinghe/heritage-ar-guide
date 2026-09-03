@@ -3,53 +3,77 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-<title>Heritage AR Guide — Marker Mode</title>
+<title>Marker-Based AR</title>
 
-<!-- A-Frame + AR.js (marker-based tracking) -->
-<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+<!-- A-Frame + AR.js -->
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ar.js@2.2.4/aframe/build/aframe-ar.min.js"></script>
 
 <style>
-  :root{ --maroon:#6e1f2a; --gold:#c9a13a; --cream:#f4ecdc; }
-  html,body{ margin:0; padding:0; height:100%; overflow:hidden; font-family:'Inter',sans-serif; }
-
+  body{margin:0;overflow:hidden;font-family:'Segoe UI',sans-serif;}
   #ui{
-    position:fixed; inset:0; pointer-events:none; z-index:20;
+    position:fixed;
+    top:0;left:0;right:0;bottom:0;
+    pointer-events:none;
+    z-index:10;
   }
   #topbar{
-    position:absolute; top:0; left:0; right:0;
-    display:flex; align-items:center; justify-content:space-between;
-    padding: max(14px, env(safe-area-inset-top)) 16px 14px;
-    background:linear-gradient(to bottom, rgba(20,10,8,0.55), transparent);
-    pointer-events:auto;
+    display:flex;
+    justify-content:space-between;
+    padding:16px 20px;
+    background:linear-gradient(to bottom,rgba(0,0,0,0.5),transparent);
   }
   #topbar a{
-    color:#fff; text-decoration:none; font-size:13px; font-weight:600;
-    background:rgba(0,0,0,0.35); padding:8px 12px; border-radius:20px;
-  }
-  #hint{
-    color:#fff; font-size:12px; font-weight:500; text-align:right;
-    background:rgba(0,0,0,0.35); padding:8px 12px; border-radius:20px;
-    max-width:52%;
-  }
-  #controls{
-    position:absolute; bottom:0; left:0; right:0;
-    display:flex; justify-content:center; gap:12px;
-    padding: 18px 16px max(18px, env(safe-area-inset-bottom));
+    color:white;
+    text-decoration:none;
+    font-weight:600;
+    font-size:14px;
+    background:rgba(0,0,0,0.4);
+    padding:8px 16px;
+    border-radius:20px;
     pointer-events:auto;
   }
-  button.pill{
-    border:none; border-radius:999px; padding:12px 18px;
-    background:rgba(0,0,0,0.55); color:#fff; font-size:13px; font-weight:600;
-    display:flex; align-items:center; gap:8px; backdrop-filter: blur(6px);
+  #hint{
+    color:white;
+    font-size:12px;
+    background:rgba(0,0,0,0.5);
+    padding:6px 14px;
+    border-radius:20px;
   }
-  button.pill:active{ background:rgba(0,0,0,0.75); }
-  button.pill.active{ background:var(--gold); color:#2a2320; }
-
-  #not-found-msg{
-    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-    background:rgba(0,0,0,0.6); color:#fff; padding:16px 20px; border-radius:8px;
-    font-size:14px; text-align:center; max-width:80%; display:none; pointer-events:none;
+  #controls{
+    position:absolute;
+    bottom:20px;
+    left:0;right:0;
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    pointer-events:auto;
+  }
+  button{
+    border:none;
+    border-radius:30px;
+    padding:10px 18px;
+    font-size:13px;
+    font-weight:600;
+    background:rgba(0,0,0,0.6);
+    color:white;
+    backdrop-filter:blur(8px);
+    cursor:pointer;
+  }
+  button.active{background:#c9a13a;color:#2a2320;}
+  #info-text{
+    position:absolute;
+    bottom:80px;
+    left:50%;
+    transform:translateX(-50%);
+    color:white;
+    background:rgba(0,0,0,0.7);
+    padding:10px 20px;
+    border-radius:12px;
+    font-size:14px;
+    display:none;
+    text-align:center;
+    max-width:80%;
   }
 </style>
 </head>
@@ -57,100 +81,103 @@
 
 <div id="ui">
   <div id="topbar">
-    <a href="index.html">&larr; Home</a>
-    <div id="hint">Point your camera at the printed Hiro marker</div>
+    <a href="index.html">← Home</a>
+    <span id="hint">📷 Point at HIRO marker</span>
   </div>
-
+  <div id="info-text">🏛️ Kandyan Mask - 19th Century Replica</div>
   <div id="controls">
-    <button class="pill active" id="audioBtn" onclick="toggleAudio()">🔊 Narration on</button>
-    <button class="pill" id="infoBtn" onclick="toggleInfo()">ℹ️ Artifact info</button>
-    <button class="pill" onclick="resetScene()">↺ Reset</button>
+    <button id="infoBtn" onclick="toggleInfo()">ℹ️ Info</button>
+    <button id="rotateBtn" onclick="toggleRotation()">🔄 Auto-Rotate</button>
   </div>
-
-  <div id="not-found-msg">Marker not detected yet — keep the whole square in frame and steady the phone.</div>
 </div>
 
 <a-scene
   embedded
-  vr-mode-ui="enabled: false"
-  renderer="logarithmicDepthBuffer: true; alpha: true"
-  arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+  vr-mode-ui="enabled:false"
+  arjs="sourceType:webcam; debugUIEnabled:false; detectionMode:mono_and_matrix; matrixCodeType:3x3;"
 >
 
+  <!-- Use public models -->
   <a-assets>
-    <a-assets>
-    <a-asset-item id="mask-model" src="assets/models/mask.glb"></a-asset-item>
-    <audio id="narration" src="assets/audio/mask-narration.mp3" preload="auto"></audio>
+    <!-- Using A-Frame's built-in geometry as fallback since GLB might not load -->
   </a-assets>
-    
 
-  <a-marker preset="hiro" id="hiroMarker" emitevents="true">
-
-    <a-entity id="artifact" gltf-model="#mask-model" position="0 0.5 0" scale="0.1 0.1 0.1"
-      animation="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear">
+  <a-marker preset="hiro" id="hiroMarker">
+    <!-- Main Artifact - Using a torus knot with nice material -->
+    <a-entity id="artifact" position="0 0.3 0">
+      <a-torus-knot
+        radius="0.15"
+        tube="0.04"
+        p="2"
+        q="3"
+        material="color:#c9a13a; metalness:0.6; roughness:0.3;"
+        animation="property:rotation; to:0 360 0; loop:true; dur:10000; easing:linear"
+      ></a-torus-knot>
+      <!-- Inner glow -->
+      <a-sphere
+        radius="0.06"
+        material="color:#ffd700; emissive:#ffd700; emissiveIntensity:0.5; transparent:true; opacity:0.6;"
+        position="0 0 0"
+      ></a-sphere>
     </a-entity>
 
-    <a-text id="infoText" value="Raksha Mask — Kandyan tradition, 19th c. replica." color="#f4ecdc"
-      align="center" width="2" position="0 1.3 0" visible="false"></a-text>
+    <!-- Second Artifact - Small statue -->
+    <a-entity position="-0.3 0.15 0.1">
+      <a-cylinder
+        radius="0.04"
+        height="0.08"
+        material="color:#6e1f2a; metalness:0.3;"
+        position="0 0.04 0"
+      ></a-cylinder>
+      <a-sphere
+        radius="0.04"
+        material="color:#f4ecdc;"
+        position="0 0.12 0"
+      ></a-sphere>
+    </a-entity>
 
-    <a-light type="point" intensity="0.9" position="0 1.2 0.6" color="#ffe6b0"></a-light>
-    <a-light type="ambient" intensity="0.6" color="#ffffff"></a-light>
+    <!-- Decorative particles -->
+    <a-entity position="0 0.5 0">
+      <a-entity particle-system="preset:snow; color:#ffd700; particleCount:30; size:0.02; speed:0.3;"></a-entity>
+    </a-entity>
+
+    <!-- Lighting -->
+    <a-light type="point" intensity="1" color="#ffe6b0" position="0 0.6 0.5"></a-light>
+    <a-light type="ambient" intensity="0.5"></a-light>
   </a-marker>
 
   <a-entity camera></a-entity>
 </a-scene>
 
 <script>
-  const marker = document.querySelector('#hiroMarker');
-  const notFoundMsg = document.querySelector('#not-found-msg');
-  const narration = document.querySelector('#narration');
-  const infoText = document.querySelector('#infoText');
-  let audioOn = true;
-  let infoOn = false;
-  let hasPlayed = false;
-  let visible = false;
+let infoVisible = false;
+let rotateOn = true;
 
-  marker.addEventListener('markerFound', () => {
-    visible = true;
-    notFoundMsg.style.display = 'none';
-    if (audioOn && !hasPlayed) {
-      narration.currentTime = 0;
-      narration.play().catch(() => {/* autoplay may be blocked until user gesture */});
-      hasPlayed = true;
+function toggleInfo() {
+  infoVisible = !infoVisible;
+  const infoText = document.getElementById('info-text');
+  infoText.style.display = infoVisible ? 'block' : 'none';
+  document.getElementById('infoBtn').classList.toggle('active', infoVisible);
+}
+
+function toggleRotation() {
+  rotateOn = !rotateOn;
+  const artifact = document.querySelector('#artifact');
+  if (artifact) {
+    if (rotateOn) {
+      artifact.setAttribute('animation', 'property:rotation; to:0 360 0; loop:true; dur:10000; easing:linear');
+    } else {
+      artifact.removeAttribute('animation');
     }
-  });
-
-  marker.addEventListener('markerLost', () => {
-    visible = false;
-  });
-
-  // Show a gentle "not detected" hint if nothing found after a few seconds
-  setTimeout(() => {
-    if (!visible) notFoundMsg.style.display = 'block';
-  }, 4000);
-
-  function toggleAudio() {
-    audioOn = !audioOn;
-    const btn = document.querySelector('#audioBtn');
-    btn.textContent = audioOn ? '🔊 Narration on' : '🔇 Narration off';
-    btn.classList.toggle('active', audioOn);
-    if (!audioOn) narration.pause();
   }
+  document.getElementById('rotateBtn').classList.toggle('active', rotateOn);
+}
 
-  function toggleInfo() {
-    infoOn = !infoOn;
-    infoText.setAttribute('visible', infoOn);
-    document.querySelector('#infoBtn').classList.toggle('active', infoOn);
-  }
-
-  function resetScene() {
-    hasPlayed = false;
-    narration.pause();
-    narration.currentTime = 0;
-    infoOn = false;
-    infoText.setAttribute('visible', false);
-    document.querySelector('#infoBtn').classList.remove('active');
-  }
+// Show hint if marker not found
+setTimeout(() => {
+  const hint = document.getElementById('hint');
+  if (hint) hint.textContent = '🔍 Move camera to find the HIRO marker';
+}, 5000);
 </script>
 </body>
 </html>
