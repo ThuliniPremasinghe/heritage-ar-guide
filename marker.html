@@ -5,9 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
 <title>Heritage AR Guide — Marker Mode</title>
 
-<!-- A-Frame + AR.js -->
-<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/ar.js@2.2.4/aframe/build/aframe-ar.min.js"></script>
+<!-- A-Frame + AR.js — using the version pairing AR.js's own docs recommend.
+     The old jsdelivr ar.js@2.2.4 build has known detection bugs with
+     newer A-Frame versions. This raw.githack build tracks the latest
+     stable AR.js release and is the pairing most tutorials/demos use. -->
+<script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
 <style>
   :root{ --maroon:#6e1f2a; --gold:#c9a13a; --cream:#f4ecdc; }
@@ -48,9 +51,9 @@
     border:1px solid rgba(255,255,255,0.1);
   }
   button.pill:active{ transform:scale(0.95); }
-  button.pill.active{ 
-    background:var(--gold); 
-    color:#2a2320; 
+  button.pill.active{
+    background:var(--gold);
+    color:#2a2320;
     border-color:var(--gold);
   }
 
@@ -79,7 +82,7 @@
 
   <div id="not-found-msg">
     🔍 Show the HIRO marker on your screen
-    <span class="small">Keep the full square in frame</span>
+    <span class="small">Keep the full square in frame, printed on paper works best</span>
   </div>
 </div>
 
@@ -87,7 +90,7 @@
   embedded
   vr-mode-ui="enabled: false"
   renderer="logarithmicDepthBuffer: true; alpha: true"
-  arjs="sourceType: webcam; debugUIEnabled: true; detectionMode: mono_and_matrix; matrixCodeType: 3x3; sourceWidth: 1280; sourceHeight: 960; displayWidth: 1280; displayHeight: 960;"
+  arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; sourceWidth: 1280; sourceHeight: 960; displayWidth: 1280; displayHeight: 960;"
 >
 
   <a-assets>
@@ -95,13 +98,13 @@
     <audio id="narration" src="assets/audio/mask-narration.mp3" preload="auto"></audio>
   </a-assets>
 
-  <a-marker preset="hiro" id="hiroMarker" emitevents="true">
+  <a-marker preset="hiro" id="hiroMarker" emitevents="true" smooth="true" smoothCount="10" smoothTolerance="0.01" smoothThreshold="5">
 
     <!-- ========================================= -->
     <!-- 3D Mask using Simple Geometry              -->
     <!-- (No external model file needed)           -->
     <!-- ========================================= -->
-    <a-entity 
+    <a-entity
       id="artifact"
       position="0 0.5 0"
       scale="0.2 0.2 0.2"
@@ -109,48 +112,48 @@
     >
       <!-- Face shape (flat oval) -->
       <a-entity position="0 0 0">
-        <a-entity geometry="primitive: sphere; radius: 0.3; segmentsHeight: 4; segmentsWidth: 6;" 
+        <a-entity geometry="primitive: sphere; radius: 0.3; segmentsHeight: 4; segmentsWidth: 6;"
                   material="color: #8B4513; roughness: 0.5; metalness: 0.3;"
                   position="0 0.05 0" scale="1 1.1 0.4">
         </a-entity>
         <!-- Eyes -->
-        <a-entity geometry="primitive: sphere; radius: 0.06;" 
+        <a-entity geometry="primitive: sphere; radius: 0.06;"
                   material="color: #FFD700; emissive: #FFD700; emissiveIntensity: 0.3;"
                   position="-0.15 0.1 0.15">
         </a-entity>
-        <a-entity geometry="primitive: sphere; radius: 0.06;" 
+        <a-entity geometry="primitive: sphere; radius: 0.06;"
                   material="color: #FFD700; emissive: #FFD700; emissiveIntensity: 0.3;"
                   position="0.15 0.1 0.15">
         </a-entity>
         <!-- Mouth -->
-        <a-entity geometry="primitive: torus; radius: 0.08; tube: 0.02; thetaStart: 0; thetaLength: 180;" 
+        <a-entity geometry="primitive: torus; radius: 0.08; tube: 0.02; thetaStart: 0; thetaLength: 180;"
                   material="color: #8B0000;"
                   position="0 -0.1 0.15" rotation="90 0 0">
         </a-entity>
         <!-- Nose -->
-        <a-entity geometry="primitive: cone; radius: 0.04; height: 0.08;" 
+        <a-entity geometry="primitive: cone; radius: 0.04; height: 0.08;"
                   material="color: #A0522D;"
                   position="0 -0.02 0.18" rotation="90 0 0">
         </a-entity>
         <!-- Head decorations -->
-        <a-entity geometry="primitive: cylinder; radius: 0.04; height: 0.15;" 
+        <a-entity geometry="primitive: cylinder; radius: 0.04; height: 0.15;"
                   material="color: #FF6B6B;"
                   position="0 0.25 0.05" rotation="90 0 0">
         </a-entity>
-        <a-entity geometry="primitive: sphere; radius: 0.06;" 
+        <a-entity geometry="primitive: sphere; radius: 0.06;"
                   material="color: #FFD700;"
                   position="0 0.32 0.05">
         </a-entity>
       </a-entity>
-      
+
       <a-light type="point" intensity="0.9" position="0 1.2 0.6" color="#ffe6b0"></a-light>
     </a-entity>
 
     <!-- ========================================= -->
     <!-- Info Label                                -->
     <!-- ========================================= -->
-    <a-text id="infoText" 
-      value="🎭 Raksha Mask — Kandyan tradition, 19th c. replica." 
+    <a-text id="infoText"
+      value="🎭 Raksha Mask — Kandyan tradition, 19th c. replica."
       color="#f4ecdc" align="center" width="3" position="0 1.3 0" visible="false"
       background="true" background-color="rgba(0,0,0,0.75)" border-radius="0.1" padding="0.2 0.3"
       font-size="0.8"
@@ -170,7 +173,7 @@
   var infoText = document.querySelector('#infoText');
   var audioBtn = document.querySelector('#audioBtn');
   var infoBtn = document.querySelector('#infoBtn');
-  
+
   var audioOn = true;
   var infoOn = false;
   var hasPlayed = false;
@@ -181,7 +184,7 @@
     visible = true;
     notFoundMsg.style.display = 'none';
     document.getElementById('hint').textContent = '✅ Artifact detected!';
-    
+
     if (audioOn && !hasPlayed) {
       narration.currentTime = 0;
       narration.play().catch(function(err) {
