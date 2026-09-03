@@ -11,7 +11,7 @@
 
 <style>
   :root{ --maroon:#6e1f2a; --gold:#c9a13a; --cream:#f4ecdc; }
-  html,body{ margin:0; padding:0; height:100%; overflow:hidden; font-family:'Inter',sans-serif; }
+  html,body{ margin:0; padding:0; height:100%; overflow:hidden; font-family:'Inter',sans-serif; background:#000; }
 
   #ui{
     position:fixed; inset:0; pointer-events:none; z-index:20;
@@ -20,58 +20,106 @@
     position:absolute; top:0; left:0; right:0;
     display:flex; align-items:center; justify-content:space-between;
     padding: max(14px, env(safe-area-inset-top)) 16px 14px;
-    background:linear-gradient(to bottom, rgba(20,10,8,0.55), transparent);
+    background:linear-gradient(to bottom, rgba(20,10,8,0.7), transparent);
     pointer-events:auto;
+    z-index:30;
   }
   #topbar a{
     color:#fff; text-decoration:none; font-size:13px; font-weight:600;
-    background:rgba(0,0,0,0.35); padding:8px 12px; border-radius:20px;
+    background:rgba(0,0,0,0.5); padding:8px 14px; border-radius:20px;
   }
   #hint{
-    color:#fff; font-size:12px; font-weight:500; text-align:right;
-    background:rgba(0,0,0,0.35); padding:8px 12px; border-radius:20px;
-    max-width:52%;
+    color:#fff; font-size:12px; font-weight:500;
+    background:rgba(0,0,0,0.5); padding:8px 14px; border-radius:20px;
   }
   #controls{
     position:absolute; bottom:0; left:0; right:0;
     display:flex; justify-content:center; gap:12px;
     padding: 18px 16px max(18px, env(safe-area-inset-bottom));
     pointer-events:auto;
+    z-index:30;
+    background:linear-gradient(to top, rgba(0,0,0,0.7), transparent);
   }
   button.pill{
-    border:none; border-radius:999px; padding:12px 18px;
-    background:rgba(0,0,0,0.55); color:#fff; font-size:13px; font-weight:600;
-    display:flex; align-items:center; gap:8px; backdrop-filter: blur(6px);
+    border:none; border-radius:999px; padding:12px 20px;
+    background:rgba(255,255,255,0.15); color:#fff; font-size:13px; font-weight:600;
+    backdrop-filter: blur(10px);
     cursor:pointer;
+    border:1px solid rgba(255,255,255,0.1);
+    transition:all 0.3s;
   }
-  button.pill:active{ background:rgba(0,0,0,0.75); }
-  button.pill.active{ background:var(--gold); color:#2a2320; }
+  button.pill:active{ transform:scale(0.95); }
+  button.pill.active{ background:var(--gold); color:#2a2320; border-color:var(--gold); }
 
   #not-found-msg{
-    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-    background:rgba(0,0,0,0.7); color:#fff; padding:16px 24px; border-radius:12px;
-    font-size:14px; text-align:center; max-width:80%; display:none; pointer-events:none;
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    background:rgba(0,0,0,0.8); color:#fff; padding:20px 28px; border-radius:16px;
+    font-size:15px; text-align:center; z-index:40; display:none;
     border:2px solid var(--gold);
+    max-width:80%;
+    backdrop-filter:blur(10px);
+  }
+  #not-found-msg .sub{ font-size:12px; color:var(--gold); margin-top:8px; display:block; }
+
+  #camera-overlay{
+    position:fixed; inset:0; z-index:5;
+    background:#000;
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:14px; text-align:center;
+    padding:20px;
+  }
+  #camera-overlay .spinner{
+    width:40px; height:40px;
+    border:4px solid rgba(255,255,255,0.1);
+    border-top-color:var(--gold);
+    border-radius:50%;
+    animation:spin 1s linear infinite;
+    margin:0 auto 16px;
+  }
+  @keyframes spin{ 100%{ transform:rotate(360deg); } }
+  
+  #permission-btn{
+    display:none;
+    background:var(--gold); color:#2a2320; border:none;
+    padding:14px 28px; border-radius:999px;
+    font-size:16px; font-weight:700;
+    cursor:pointer; margin-top:16px;
+    z-index:50; position:relative;
   }
 </style>
 </head>
 <body>
 
+<!-- Camera Loading Overlay -->
+<div id="camera-overlay">
+  <div style="text-align:center;">
+    <div class="spinner"></div>
+    <div id="overlay-text">📷 Starting camera...</div>
+    <button id="permission-btn" onclick="requestCamera()">📸 Allow Camera Access</button>
+  </div>
+</div>
+
+<!-- UI Overlay -->
 <div id="ui">
   <div id="topbar">
     <a href="index.html">← Home</a>
-    <div id="hint">Point your camera at the Hiro marker on screen</div>
+    <div id="hint">🎯 Point at Hiro marker</div>
   </div>
 
   <div id="controls">
-    <button class="pill active" id="infoBtn" onclick="toggleInfo()">ℹ️ Artifact info</button>
-    <button class="pill" id="spinBtn" onclick="toggleSpin()">🔄 Auto-Rotate</button>
+    <button class="pill active" id="infoBtn" onclick="toggleInfo()">ℹ️ Info</button>
+    <button class="pill" id="spinBtn" onclick="toggleSpin()">🔄 Rotate</button>
   </div>
 
-  <div id="not-found-msg">🔍 Show the HIRO marker on your screen<br><span style="font-size:12px;color:#c9a13a;">Keep the full square in frame</span></div>
+  <div id="not-found-msg">
+    🔍 Show the HIRO marker on your screen
+    <span class="sub">Keep the full square in frame</span>
+  </div>
 </div>
 
+<!-- AR Scene -->
 <a-scene
+  id="ar-scene"
   embedded
   vr-mode-ui="enabled: false"
   renderer="logarithmicDepthBuffer: true; alpha: true"
@@ -87,8 +135,14 @@
       scale="0.3 0.3 0.3"
       rotation="-90 0 0"
       id="artifact"
-      animation="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear"
     >
+      <a-animation 
+        attribute="rotation"
+        to="0 360 0"
+        loop="true"
+        dur="12000"
+        easing="linear"
+      ></a-animation>
       <a-light type="point" intensity="0.9" position="0 1.2 0.6" color="#ffe6b0"></a-light>
     </a-entity>
 
@@ -98,13 +152,29 @@
       position="0.6 0 0.3"
       scale="0.15 0.15 0.15"
       rotation="0 45 0"
-      animation="property: position; to: 0.6 0.1 0.3; loop: true; dir: alternate; dur: 2000; easing: easeInOutQuad"
-    ></a-entity>
+    >
+      <a-animation 
+        attribute="position"
+        to="0.6 0.1 0.3"
+        loop="true"
+        dir="alternate"
+        dur="2000"
+        easing="easeInOutQuad"
+      ></a-animation>
+    </a-entity>
 
     <!-- Info Text -->
-    <a-text id="infoText" value="🏛️ Ancient Temple & Statue · UNESCO Heritage Site" color="#f4ecdc"
-      align="center" width="3" position="0 -0.4 0" visible="false"
-      background="true" background-color="rgba(0,0,0,0.7)" border-radius="0.1" padding="0.2 0.3">
+    <a-text id="infoText" 
+      value="🏛️ Ancient Temple & Statue · UNESCO Heritage Site" 
+      color="#f4ecdc"
+      align="center" 
+      width="3" 
+      position="0 -0.4 0" 
+      visible="false"
+      background="true" 
+      background-color="rgba(0,0,0,0.7)" 
+      border-radius="0.1" 
+      padding="0.2 0.3">
     </a-text>
 
     <a-light type="ambient" intensity="0.6" color="#ffffff"></a-light>
@@ -119,25 +189,87 @@
   var infoText = document.querySelector('#infoText');
   var infoBtn = document.querySelector('#infoBtn');
   var spinBtn = document.querySelector('#spinBtn');
+  var overlay = document.querySelector('#camera-overlay');
+  var overlayText = document.querySelector('#overlay-text');
+  var permissionBtn = document.querySelector('#permission-btn');
+  var scene = document.querySelector('#ar-scene');
   var infoOn = false;
   var spinning = true;
   var visible = false;
+  var cameraStarted = false;
 
+  // Hide overlay when AR scene is ready
+  function hideOverlay() {
+    overlay.style.display = 'none';
+    cameraStarted = true;
+  }
+
+  // Show permission button if camera fails
+  function showPermissionRequest() {
+    overlayText.textContent = '📸 Camera access required';
+    permissionBtn.style.display = 'inline-block';
+  }
+
+  // Request camera permission
+  function requestCamera() {
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(function(stream) {
+        stream.getTracks().forEach(track => track.stop());
+        overlayText.textContent = '📷 Restarting camera...';
+        permissionBtn.style.display = 'none';
+        // Reload the scene to re-trigger camera
+        location.reload();
+      })
+      .catch(function(err) {
+        overlayText.textContent = '❌ Camera access denied. Please allow camera in browser settings.';
+        console.error('Camera error:', err);
+      });
+  }
+
+  // Try to start camera with a timeout
+  setTimeout(function() {
+    if (!cameraStarted) {
+      // Check if camera is actually working
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(function(stream) {
+          stream.getTracks().forEach(track => track.stop());
+          // Camera works, but AR.js might not have initialized
+          setTimeout(hideOverlay, 2000);
+        })
+        .catch(function(err) {
+          showPermissionRequest();
+          console.warn('Camera permission needed:', err);
+        });
+    }
+  }, 5000);
+
+  // Hide overlay after 8 seconds max (AR.js should be ready)
+  setTimeout(function() {
+    if (!cameraStarted) {
+      hideOverlay();
+    }
+  }, 8000);
+
+  // Marker detection events
   marker.addEventListener('markerFound', function() {
     visible = true;
     notFoundMsg.style.display = 'none';
     document.getElementById('hint').textContent = '✅ Artifact detected!';
+    hideOverlay();
   });
 
   marker.addEventListener('markerLost', function() {
     visible = false;
-    document.getElementById('hint').textContent = 'Point your camera at the Hiro marker on screen';
+    document.getElementById('hint').textContent = '🎯 Point at Hiro marker';
   });
 
-  // Show message if marker not found after 3 seconds
+  // Show message if marker not found after 4 seconds
   setTimeout(function() {
-    if (!visible) notFoundMsg.style.display = 'block';
-  }, 3000);
+    if (!visible) {
+      notFoundMsg.style.display = 'block';
+      hideOverlay();
+    }
+  }, 4000);
 
   function toggleInfo() {
     infoOn = !infoOn;
@@ -156,8 +288,21 @@
     }
   }
 
+  // Expose functions globally
   window.toggleInfo = toggleInfo;
   window.toggleSpin = toggleSpin;
+  window.requestCamera = requestCamera;
+
+  // Hide overlay on any click/tap (user interaction)
+  document.addEventListener('click', function() {
+    hideOverlay();
+  });
+  document.addEventListener('touchstart', function() {
+    hideOverlay();
+  });
+
+  console.log('🏛️ Heritage AR Guide - Marker Mode');
+  console.log('📷 Waiting for camera...');
 </script>
 </body>
 </html>
