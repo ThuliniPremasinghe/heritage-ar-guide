@@ -1,308 +1,494 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-<title>Heritage AR Guide — Marker Mode</title>
+  <meta charset="UTF-8">
 
-<!-- A-Frame + AR.js (marker-based tracking) -->
-<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/ar.js@2.2.4/aframe/build/aframe-ar.min.js"></script>
+<meta name="viewport"
+     content="width=device-width,
+     initial-scale=1,
+     maximum-scale=1,
+     user-scalable=no">
 
-<style>
-  :root{ --maroon:#6e1f2a; --gold:#c9a13a; --cream:#f4ecdc; }
-  html,body{ margin:0; padding:0; height:100%; overflow:hidden; font-family:'Inter',sans-serif; background:#000; }
+  <title>Heritage AR Guide - Marker AR</title>
 
-  #ui{
-    position:fixed; inset:0; pointer-events:none; z-index:20;
-  }
-  #topbar{
-    position:absolute; top:0; left:0; right:0;
-    display:flex; align-items:center; justify-content:space-between;
-    padding: max(14px, env(safe-area-inset-top)) 16px 14px;
-    background:linear-gradient(to bottom, rgba(20,10,8,0.7), transparent);
-    pointer-events:auto;
-    z-index:30;
-  }
-  #topbar a{
-    color:#fff; text-decoration:none; font-size:13px; font-weight:600;
-    background:rgba(0,0,0,0.5); padding:8px 14px; border-radius:20px;
-  }
-  #hint{
-    color:#fff; font-size:12px; font-weight:500;
-    background:rgba(0,0,0,0.5); padding:8px 14px; border-radius:20px;
-  }
-  #controls{
-    position:absolute; bottom:0; left:0; right:0;
-    display:flex; justify-content:center; gap:12px;
-    padding: 18px 16px max(18px, env(safe-area-inset-bottom));
-    pointer-events:auto;
-    z-index:30;
-    background:linear-gradient(to top, rgba(0,0,0,0.7), transparent);
-  }
-  button.pill{
-    border:none; border-radius:999px; padding:12px 20px;
-    background:rgba(255,255,255,0.15); color:#fff; font-size:13px; font-weight:600;
-    backdrop-filter: blur(10px);
-    cursor:pointer;
-    border:1px solid rgba(255,255,255,0.1);
-    transition:all 0.3s;
-  }
-  button.pill:active{ transform:scale(0.95); }
-  button.pill.active{ background:var(--gold); color:#2a2320; border-color:var(--gold); }
+  <!-- A-Frame -->
 
-  #not-found-msg{
-    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-    background:rgba(0,0,0,0.8); color:#fff; padding:20px 28px; border-radius:16px;
-    font-size:15px; text-align:center; z-index:40; display:none;
-    border:2px solid var(--gold);
-    max-width:80%;
-    backdrop-filter:blur(10px);
-  }
-  #not-found-msg .sub{ font-size:12px; color:var(--gold); margin-top:8px; display:block; }
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
 
-  #camera-overlay{
-    position:fixed; inset:0; z-index:5;
-    background:#000;
-    display:flex; align-items:center; justify-content:center;
-    color:#fff; font-size:14px; text-align:center;
-    padding:20px;
-  }
-  #camera-overlay .spinner{
-    width:40px; height:40px;
-    border:4px solid rgba(255,255,255,0.1);
-    border-top-color:var(--gold);
-    border-radius:50%;
-    animation:spin 1s linear infinite;
-    margin:0 auto 16px;
-  }
-  @keyframes spin{ 100%{ transform:rotate(360deg); } }
-  
-  #permission-btn{
-    display:none;
-    background:var(--gold); color:#2a2320; border:none;
-    padding:14px 28px; border-radius:999px;
-    font-size:16px; font-weight:700;
-    cursor:pointer; margin-top:16px;
-    z-index:50; position:relative;
-  }
-</style>
+  <!-- AR.js -->
+
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+
+  <style>
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      font-family: Arial, sans-serif;
+    }
+
+    #ui {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    #topbar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      padding: 15px;
+
+      background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.7),
+        transparent
+      );
+    }
+
+    #home {
+      pointer-events: auto;
+
+      color: white;
+      text-decoration: none;
+
+      background: rgba(0,0,0,0.6);
+
+      padding: 9px 15px;
+
+      border-radius: 20px;
+
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    #status {
+
+      color: white;
+
+      background: rgba(0,0,0,0.6);
+
+      padding: 9px 15px;
+
+      border-radius: 20px;
+
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    #bottom {
+
+      position: absolute;
+
+      bottom: 0;
+      left: 0;
+      right: 0;
+
+      display: flex;
+
+      justify-content: center;
+
+      gap: 10px;
+
+      padding: 20px;
+
+      background: linear-gradient(
+        to top,
+        rgba(0,0,0,0.7),
+        transparent
+      );
+
+      pointer-events: auto;
+    }
+
+    button {
+
+      border: none;
+
+      border-radius: 25px;
+
+      padding: 12px 20px;
+
+      background: #c9a13a;
+
+      color: #2a2320;
+
+      font-weight: bold;
+
+      font-size: 14px;
+
+      cursor: pointer;
+    }
+
+    button.secondary {
+
+      background: rgba(255,255,255,0.2);
+
+      color: white;
+    }
+
+  </style>
+
 </head>
+
 <body>
 
-<!-- Camera Loading Overlay -->
-<div id="camera-overlay">
-  <div style="text-align:center;">
-    <div class="spinner"></div>
-    <div id="overlay-text">📷 Starting camera...</div>
-    <button id="permission-btn" onclick="requestCamera()">📸 Allow Camera Access</button>
+  <!-- User Interface -->
+
+  <div id="ui">
+
+```
+<div id="topbar">
+
+  <a id="home" href="index.html">
+    ← Home
+  </a>
+
+  <div id="status">
+    🎯 Looking for Hiro marker...
   </div>
+
 </div>
 
-<!-- UI Overlay -->
-<div id="ui">
-  <div id="topbar">
-    <a href="index.html">← Home</a>
-    <div id="hint">🎯 Point at Hiro marker</div>
-  </div>
 
-  <div id="controls">
-    <button class="pill active" id="infoBtn" onclick="toggleInfo()">ℹ️ Info</button>
-    <button class="pill" id="spinBtn" onclick="toggleSpin()">🔄 Rotate</button>
-  </div>
+<div id="bottom">
 
-  <div id="not-found-msg">
-    🔍 Show the HIRO marker on your screen
-    <span class="sub">Keep the full square in frame</span>
-  </div>
+  <button onclick="toggleInfo()">
+    ℹ️ Info
+  </button>
+
+  <button
+    class="secondary"
+    onclick="toggleRotation()">
+
+    🔄 Rotate
+
+  </button>
+
 </div>
+```
 
-<!-- AR Scene -->
+  </div>
+
+  <!-- AR SCENE -->
+
 <a-scene
-  id="ar-scene"
-  embedded
-  vr-mode-ui="enabled: false"
-  renderer="logarithmicDepthBuffer: true; alpha: true"
-  arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono; matrixCodeType: 3x3;"
+
+```
+embedded
+
+vr-mode-ui="enabled: false"
+
+renderer="logarithmicDepthBuffer: true; alpha: true"
+
+arjs="
+  sourceType: webcam;
+  debugUIEnabled: false;
+  detectionMode: mono;
+  matrixCodeType: 3x3;
+"
+
+loading-screen="
+  enabled: false;
+"
+```
+
 >
 
-  <a-marker preset="hiro" id="hiroMarker" emitevents="true">
+```
+<!-- HIRO MARKER -->
 
-    <!-- Main Artifact - Temple from CDN -->
-    <a-entity 
-      gltf-model="https://cdn.jsdelivr.net/gh/aframe-models/aframe-models@latest/gltf/archaeological-temple/temple.gltf"
-      position="0 0 0"
-      scale="0.3 0.3 0.3"
-      rotation="-90 0 0"
-      id="artifact"
-    >
-      <a-animation 
-        attribute="rotation"
-        to="0 360 0"
-        loop="true"
-        dur="12000"
-        easing="linear"
-      ></a-animation>
-      <a-light type="point" intensity="0.9" position="0 1.2 0.6" color="#ffe6b0"></a-light>
-    </a-entity>
+<a-marker
 
-    <!-- Second Artifact - Statue -->
-    <a-entity 
-      gltf-model="https://cdn.jsdelivr.net/gh/aframe-models/aframe-models@latest/gltf/statue/statue.gltf"
-      position="0.6 0 0.3"
-      scale="0.15 0.15 0.15"
-      rotation="0 45 0"
-    >
-      <a-animation 
-        attribute="position"
-        to="0.6 0.1 0.3"
-        loop="true"
-        dir="alternate"
-        dur="2000"
-        easing="easeInOutQuad"
-      ></a-animation>
-    </a-entity>
+  id="hiroMarker"
 
-    <!-- Info Text -->
-    <a-text id="infoText" 
-      value="🏛️ Ancient Temple & Statue · UNESCO Heritage Site" 
-      color="#f4ecdc"
-      align="center" 
-      width="3" 
-      position="0 -0.4 0" 
-      visible="false"
-      background="true" 
-      background-color="rgba(0,0,0,0.7)" 
-      border-radius="0.1" 
-      padding="0.2 0.3">
-    </a-text>
+  preset="hiro"
 
-    <a-light type="ambient" intensity="0.6" color="#ffffff"></a-light>
-  </a-marker>
+  emitevents="true"
 
-  <a-entity camera></a-entity>
-</a-scene>
+>
 
-<script>
-  var marker = document.querySelector('#hiroMarker');
-  var notFoundMsg = document.querySelector('#not-found-msg');
-  var infoText = document.querySelector('#infoText');
-  var infoBtn = document.querySelector('#infoBtn');
-  var spinBtn = document.querySelector('#spinBtn');
-  var overlay = document.querySelector('#camera-overlay');
-  var overlayText = document.querySelector('#overlay-text');
-  var permissionBtn = document.querySelector('#permission-btn');
-  var scene = document.querySelector('#ar-scene');
-  var infoOn = false;
-  var spinning = true;
-  var visible = false;
-  var cameraStarted = false;
 
-  // Hide overlay when AR scene is ready
-  function hideOverlay() {
-    overlay.style.display = 'none';
-    cameraStarted = true;
-  }
+  <!-- Main Heritage Artifact -->
 
-  // Show permission button if camera fails
-  function showPermissionRequest() {
-    overlayText.textContent = '📸 Camera access required';
-    permissionBtn.style.display = 'inline-block';
-  }
+  <a-box
 
-  // Request camera permission
-  function requestCamera() {
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(function(stream) {
-        stream.getTracks().forEach(track => track.stop());
-        overlayText.textContent = '📷 Restarting camera...';
-        permissionBtn.style.display = 'none';
-        // Reload the scene to re-trigger camera
-        location.reload();
-      })
-      .catch(function(err) {
-        overlayText.textContent = '❌ Camera access denied. Please allow camera in browser settings.';
-        console.error('Camera error:', err);
-      });
-  }
+    id="artifact"
 
-  // Try to start camera with a timeout
-  setTimeout(function() {
-    if (!cameraStarted) {
-      // Check if camera is actually working
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(function(stream) {
-          stream.getTracks().forEach(track => track.stop());
-          // Camera works, but AR.js might not have initialized
-          setTimeout(hideOverlay, 2000);
-        })
-        .catch(function(err) {
-          showPermissionRequest();
-          console.warn('Camera permission needed:', err);
-        });
+    position="0 0.5 0"
+
+    rotation="0 0 0"
+
+    scale="0.7 0.7 0.7"
+
+    color="#8B4513"
+
+  >
+
+  </a-box>
+
+
+
+  <!-- Golden Roof -->
+
+  <a-cone
+
+    position="0 1.05 0"
+
+    radius-bottom="0.65"
+
+    radius-top="0"
+
+    height="0.5"
+
+    color="#c9a13a"
+
+  >
+
+  </a-cone>
+
+
+
+  <!-- Pillars -->
+
+  <a-cylinder
+
+    position="-0.45 0.25 0"
+
+    radius="0.08"
+
+    height="0.5"
+
+    color="#f4ecdc"
+
+  >
+
+  </a-cylinder>
+
+
+  <a-cylinder
+
+    position="0.45 0.25 0"
+
+    radius="0.08"
+
+    height="0.5"
+
+    color="#f4ecdc"
+
+  >
+
+  </a-cylinder>
+
+
+
+  <!-- Second Artifact -->
+
+  <a-sphere
+
+    id="statue"
+
+    position="0.9 0.35 0"
+
+    radius="0.25"
+
+    color="#6e1f2a"
+
+  >
+
+  </a-sphere>
+
+
+
+  <!-- Information -->
+
+  <a-text
+
+    id="infoText"
+
+    value="Ancient Heritage Exhibit"
+
+    align="center"
+
+    color="#f4ecdc"
+
+    width="3"
+
+    position="0 -0.3 0"
+
+    visible="false"
+
+  >
+
+  </a-text>
+
+
+
+  <!-- Lighting -->
+
+  <a-light
+
+    type="ambient"
+
+    intensity="1"
+
+    color="#ffffff">
+
+  </a-light>
+
+
+</a-marker>
+
+
+
+<!-- Camera -->
+
+<a-entity camera></a-entity>
+```
+
+  </a-scene>
+
+  <script>
+
+    const marker =
+      document.querySelector("#hiroMarker");
+
+    const status =
+      document.querySelector("#status");
+
+    const artifact =
+      document.querySelector("#artifact");
+
+    const infoText =
+      document.querySelector("#infoText");
+
+
+    let rotating = true;
+
+    let showInfo = false;
+
+
+    // -----------------------------
+    // Marker FOUND
+    // -----------------------------
+
+    marker.addEventListener(
+      "markerFound",
+      function () {
+
+        console.log("HIRO MARKER FOUND");
+
+        status.innerHTML =
+          "✅ Marker detected!";
+
+        status.style.background =
+          "rgba(20,120,50,0.85)";
+
+      }
+    );
+
+
+    // -----------------------------
+    // Marker LOST
+    // -----------------------------
+
+    marker.addEventListener(
+      "markerLost",
+      function () {
+
+        console.log("HIRO MARKER LOST");
+
+        status.innerHTML =
+          "🎯 Looking for Hiro marker...";
+
+        status.style.background =
+          "rgba(0,0,0,0.6)";
+
+      }
+    );
+
+
+    // -----------------------------
+    // Toggle information
+    // -----------------------------
+
+    function toggleInfo() {
+
+      showInfo = !showInfo;
+
+      infoText.setAttribute(
+        "visible",
+        showInfo
+      );
+
     }
-  }, 5000);
 
-  // Hide overlay after 8 seconds max (AR.js should be ready)
-  setTimeout(function() {
-    if (!cameraStarted) {
-      hideOverlay();
+
+    // -----------------------------
+    // Toggle rotation
+    // -----------------------------
+
+    function toggleRotation() {
+
+      rotating = !rotating;
+
+      if (rotating) {
+
+        artifact.setAttribute(
+          "animation",
+          "property: rotation; " +
+          "to: 0 360 0; " +
+          "loop: true; " +
+          "dur: 5000; " +
+          "easing: linear"
+        );
+
+      } else {
+
+        artifact.removeAttribute(
+          "animation"
+        );
+
+      }
+
     }
-  }, 8000);
 
-  // Marker detection events
-  marker.addEventListener('markerFound', function() {
-    visible = true;
-    notFoundMsg.style.display = 'none';
-    document.getElementById('hint').textContent = '✅ Artifact detected!';
-    hideOverlay();
-  });
 
-  marker.addEventListener('markerLost', function() {
-    visible = false;
-    document.getElementById('hint').textContent = '🎯 Point at Hiro marker';
-  });
+    // Start rotation
 
-  // Show message if marker not found after 4 seconds
-  setTimeout(function() {
-    if (!visible) {
-      notFoundMsg.style.display = 'block';
-      hideOverlay();
-    }
-  }, 4000);
+    artifact.setAttribute(
 
-  function toggleInfo() {
-    infoOn = !infoOn;
-    infoText.setAttribute('visible', infoOn);
-    infoBtn.classList.toggle('active', infoOn);
-  }
+      "animation",
 
-  function toggleSpin() {
-    spinning = !spinning;
-    var artifact = document.querySelector('#artifact');
-    spinBtn.classList.toggle('active', spinning);
-    if (spinning) {
-      artifact.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear');
-    } else {
-      artifact.removeAttribute('animation');
-    }
-  }
+      "property: rotation; " +
+      "to: 0 360 0; " +
+      "loop: true; " +
+      "dur: 5000; " +
+      "easing: linear"
 
-  // Expose functions globally
-  window.toggleInfo = toggleInfo;
-  window.toggleSpin = toggleSpin;
-  window.requestCamera = requestCamera;
+    );
 
-  // Hide overlay on any click/tap (user interaction)
-  document.addEventListener('click', function() {
-    hideOverlay();
-  });
-  document.addEventListener('touchstart', function() {
-    hideOverlay();
-  });
 
-  console.log('🏛️ Heritage AR Guide - Marker Mode');
-  console.log('📷 Waiting for camera...');
-</script>
+    console.log(
+      "Heritage AR Guide started"
+    );
+
+  </script>
+
 </body>
+
 </html>
