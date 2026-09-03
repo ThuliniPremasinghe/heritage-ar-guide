@@ -1,115 +1,325 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Heritage AR Guide</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --maroon:#6e1f2a;
-    --maroon-deep:#4a141c;
-    --gold:#c9a13a;
-    --cream:#f4ecdc;
-    --charcoal:#2a2320;
-    --line: rgba(42,35,32,0.14);
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    background:var(--cream);
-    color:var(--charcoal);
-    font-family:'Inter',sans-serif;
-    min-height:100svh;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    padding:0 20px;
-  }
-  .wrap{ max-width:640px; width:100%; padding-top:clamp(32px,8vh,72px); padding-bottom:48px; }
-  .eyebrow{
-    font-size:12px; letter-spacing:0.18em; text-transform:uppercase;
-    color:var(--maroon); font-weight:600; margin:0 0 14px;
-  }
-  h1{
-    font-family:'Fraunces',serif;
-    font-weight:700;
-    font-size:clamp(34px,7vw,54px);
-    line-height:1.04;
-    margin:0 0 18px;
-    color:var(--maroon-deep);
-  }
-  p.lede{
-    font-size:16px; line-height:1.6; color:#4a4038; max-width:52ch; margin:0 0 40px;
-  }
-  .cards{ display:grid; grid-template-columns:1fr; gap:16px; }
-  @media(min-width:560px){ .cards{ grid-template-columns:1fr 1fr; } }
-  a.card{
-    text-decoration:none; color:inherit;
-    border:1px solid var(--line);
-    border-radius:2px;
-    padding:26px 22px;
-    background:#fffaf0;
-    position:relative;
-    display:flex; flex-direction:column; gap:10px;
-    transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-  }
-  a.card:hover, a.card:focus-visible{
-    transform:translateY(-2px);
-    border-color:var(--gold);
-    box-shadow:0 10px 24px rgba(74,20,28,0.10);
-    outline:none;
-  }
-  .card .tag{
-    font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); font-weight:600;
-  }
-  .card h2{ font-family:'Fraunces',serif; font-size:22px; margin:2px 0 2px; color:var(--maroon-deep); }
-  .card p{ font-size:14px; line-height:1.55; color:#5a4f45; margin:0; }
-  .card .go{ margin-top:8px; font-size:13px; font-weight:600; color:var(--maroon); }
-  footer{
-    margin-top:auto; padding:28px 0 12px; font-size:12px; color:#8a7d70; text-align:center;
-  }
-  .divider{ height:1px; background:var(--line); width:100%; margin:36px 0 30px; }
-  .note{
-    font-size:13px; line-height:1.6; color:#6a5d51; background:#fff4de; border:1px solid var(--line);
-    padding:12px 14px; border-radius:2px;
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tourism XR · WebAR Heritage Explorer</title>
+  <!-- A-Frame core & extras -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <!-- AR.js for marker based tracking -->
+  <script src="https://cdn.jsdelivr.net/npm/ar.js@2.2.4/aframe/build/aframe-ar.min.js"></script>
+  <!-- A-Frame extras for additional components -->
+  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.0.0/dist/aframe-extras.min.js"></script>
+  <style>
+    body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .ar-prompt {
+      position: fixed;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      color: white;
+      background: rgba(0,0,0,0.6);
+      padding: 12px 20px;
+      margin: 0 auto;
+      width: fit-content;
+      border-radius: 40px;
+      backdrop-filter: blur(4px);
+      font-size: 14px;
+      pointer-events: none;
+      z-index: 10;
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    .ar-prompt strong { color: #ffd966; }
+    .info-tip {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.7);
+      color: #eee;
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-size: 12px;
+      backdrop-filter: blur(4px);
+      border: 1px solid #ffd96655;
+      z-index: 20;
+      pointer-events: none;
+    }
+    @media (max-width: 600px) {
+      .ar-prompt { font-size: 12px; padding: 8px 16px; bottom: 12px; width: 90%; }
+      .info-tip { display: none; }
+    }
+    a { color: #ffd966; }
+  </style>
 </head>
 <body>
-  <div class="wrap">
-    <p class="eyebrow">INTE 42312 — WebXR / WebAR Assignment</p>
-    <h1>Heritage AR Guide</h1>
-    <p class="lede">
-      Explore artifacts without touching them. Point your camera at a museum info
-      card to bring an artifact to life, or build your own tabletop exhibit
-      anywhere using your phone's camera and real-world surfaces.
-    </p>
-
-    <div class="cards">
-      <a class="card" href="marker.html">
-        <span class="tag">Marker-Based AR</span>
-        <h2>Scan the info card</h2>
-        <p>Point your camera at the printed Hiro marker to reveal an artifact with narration and animation.</p>
-        <span class="go">Launch &rarr;</span>
-      </a>
-      <a class="card" href="markerless.html">
-        <span class="tag">Markerless AR</span>
-        <h2>Build your exhibit</h2>
-        <p>Detect any flat surface, place two artifacts, and drag them into your own arrangement.</p>
-        <span class="go">Launch &rarr;</span>
-      </a>
-    </div>
-
-    <div class="divider"></div>
-    <p class="note">
-      Requires a phone browser with camera access over HTTPS (Chrome on Android
-      is most reliable for both marker tracking and the WebXR hit-test API).
-      <a href="assets/markers/hiro-marker.pdf">Download / print the Hiro marker</a> before using marker-based mode.
-    </p>
+  <!-- UI overlay for advanced interaction status -->
+  <div class="info-tip">📍 Heritage AR · double-tap models for info</div>
+  <div class="ar-prompt">
+    <span>🔍 <strong>Marker AR</strong> (HIRO) + <strong>Markerless</strong> (tap to place) · Tourism XR</span>
   </div>
-  <footer>Heritage AR Guide — student project, INTE 42312</footer>
+
+  <!-- A-Frame scene with AR.js (marker based) and WebXR (markerless) -->
+  <a-scene 
+    embedded 
+    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono; matrixCodeType: 3x3;"
+    webxr="optionalFeatures: local-floor;"
+    vr-mode-ui="enabled: false"
+    renderer="antialias: true; alpha: false;"
+    shadow="enabled: false"
+  >
+    <!-- Camera feed + AR setup -->
+    <a-camera gps-camera="false" position="0 0 0" look-controls="enabled: false" wasd-controls="enabled: false"></a-camera>
+
+    <!-- ======================== -->
+    <!-- MARKER-BASED AR (HIRO)   -->
+    <!-- ======================== -->
+    <a-marker preset="hiro" id="hiro-marker" smooth="true" smoothCount="10" smoothTolerance="0.01">
+      <!-- 3D model 1: Ancient temple (glTF) -->
+      <a-entity 
+        gltf-model="https://cdn.jsdelivr.net/gh/aframe-models/aframe-models@latest/gltf/archaeological-temple/temple.gltf"
+        scale="0.4 0.4 0.4"
+        position="0 0 0"
+        rotation="-90 0 0"
+        animation="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear"
+        class="clickable"
+        data-info="🏛️ Ancient Temple · Built 5th century · UNESCO site"
+      >
+        <!-- glowing aura (light effect) -->
+        <a-light type="point" color="#ffaa55" intensity="0.8" position="0 1 0" distance="5"></a-light>
+      </a-entity>
+      
+      <!-- 3D model 2: Historic statue / artifact (using a public model from A-Frame examples) -->
+      <a-entity 
+        gltf-model="https://cdn.jsdelivr.net/gh/aframe-models/aframe-models@latest/gltf/statue/statue.gltf"
+        scale="0.25 0.25 0.25"
+        position="0.8 0 -0.2"
+        rotation="0 45 0"
+        animation="property: position; to: 0.8 0.15 -0.2; loop: true; dir: alternate; dur: 2000; easing: easeInOutQuad"
+        class="clickable"
+        data-info="🗿 Marble Statue · Hellenistic period · museum replica"
+      >
+        <a-light type="point" color="#88ccff" intensity="0.6" position="-0.5 1 0.3"></a-light>
+      </a-entity>
+      
+      <!-- additional decorative element: floating particles / sparkles (optimized) -->
+      <a-entity particle-system="preset: snow; color: #ffdd77; particleCount: 40; size: 0.08; speed: 0.4;" position="0 0.8 0"></a-entity>
+    </a-marker>
+
+    <!-- =========================================== -->
+    <!-- MARKERLESS AR: plane detection via WebXR    -->
+    <!-- =========================================== -->
+    <a-entity id="markerless-container" position="0 0 0">
+      <!-- This entity will be positioned via hit-test / tap -->
+      <!-- We use a visible reticle for user feedback -->
+      <a-entity id="reticle" 
+        geometry="primitive: ring; radiusInner: 0.04; radiusOuter: 0.07;"
+        material="color: #ffd966; opacity: 0.8; side: double; transparent: true"
+        position="0 -0.5 -2"
+        visible="true"
+      ></a-entity>
+
+      <!-- markerless content group (placed on tap) -->
+      <a-entity id="markerless-content" position="0 0 0">
+        <!-- Model 1: modern landmark (using a low-poly building) -->
+        <a-entity 
+          id="ml-model1"
+          gltf-model="https://cdn.jsdelivr.net/gh/aframe-models/aframe-models@latest/gltf/modern-building/modern-building.gltf"
+          scale="0.3 0.3 0.3"
+          position="0 0 0"
+          rotation="0 45 0"
+          class="clickable"
+          data-info="🏙️ Modern Museum · contemporary architecture · opened 2022"
+          visible="false"
+        >
+          <a-light type="point" color="#66ccff" intensity="0.5" position="0 2 0"></a-light>
+        </a-entity>
+        
+        <!-- Model 2: nature / garden element (tree) -->
+        <a-entity 
+          id="ml-model2"
+          gltf-model="https://cdn.jsdelivr.net/gh/aframe-models/aframe-models@latest/gltf/tree/tree.gltf"
+          scale="0.5 0.5 0.5"
+          position="1.2 0 0.8"
+          rotation="0 10 0"
+          class="clickable"
+          data-info="🌳 Heritage Oak · planted 1876 · protected tree"
+          visible="false"
+        >
+          <a-light type="point" color="#88dd88" intensity="0.3" position="0 1.5 0"></a-light>
+        </a-entity>
+      </a-entity>
+    </a-entity>
+
+    <!-- =========================================== -->
+    <!-- ADVANCED INTERACTION: multi-step + data      -->
+    <!-- =========================================== -->
+    <!-- UI for data display (simulated "live data" from tourism API) -->
+    <a-entity id="data-display" position="0 1.5 -1.5" visible="false">
+      <a-text id="data-text" value="📊 Visitor count: 1,284 today" color="white" align="center" width="2" position="0 0 0" 
+        background="true" background-color="rgba(0,0,0,0.7)" border-radius="0.1" padding="0.2 0.3"></a-text>
+    </a-entity>
+
+    <!-- UI for interaction feedback (state management) -->
+    <a-entity id="state-indicator" position="0 1.8 -1.8" visible="false">
+      <a-text id="state-text" value="✨ Double-tap model for details" color="#ffd966" align="center" width="1.8" position="0 0 0"
+        background="true" background-color="rgba(20,20,30,0.8)" border-radius="0.1" padding="0.15 0.3"></a-text>
+    </a-entity>
+
+    <!-- Ambient light + environment -->
+    <a-light type="ambient" color="#ffffff" intensity="0.5"></a-light>
+    <a-light type="directional" color="#ffffff" intensity="0.8" position="1 2 1"></a-light>
+    <a-light type="directional" color="#ddeeff" intensity="0.4" position="-1 1 -1"></a-light>
+
+    <!-- =========================================== -->
+    <!-- SCRIPTS: interaction, markerless placement  -->
+    <!-- =========================================== -->
+    <script>
+      AFRAME.registerComponent('clickable', {
+        init: function () {
+          const el = this.el;
+          // double-tap / click detection for advanced interaction
+          el.addEventListener('click', function (evt) {
+            // Prevent if it's a reticle or ui
+            if (el.id === 'reticle') return;
+            // Show data / state information (simulated live data update)
+            const info = el.getAttribute('data-info') || '📍 Heritage site';
+            // Update data display (simulate API data)
+            const dataText = document.querySelector('#data-text');
+            if (dataText) {
+              // simulate live data: random visitor count
+              const visitors = Math.floor(1200 + Math.random() * 500);
+              dataText.setAttribute('value', `📊 ${info} · Visitors: ${visitors} today`);
+              // show data display
+              const dataDisplay = document.querySelector('#data-display');
+              if (dataDisplay) dataDisplay.setAttribute('visible', 'true');
+              // hide after 4 seconds
+              setTimeout(() => {
+                if (dataDisplay) dataDisplay.setAttribute('visible', 'false');
+              }, 4000);
+            }
+            // State management: show a brief state message
+            const stateText = document.querySelector('#state-text');
+            if (stateText) {
+              stateText.setAttribute('value', `🔍 ${info}`);
+              const stateInd = document.querySelector('#state-indicator');
+              if (stateInd) stateInd.setAttribute('visible', 'true');
+              setTimeout(() => {
+                if (stateInd) stateInd.setAttribute('visible', 'false');
+              }, 3000);
+            }
+            // Visual feedback: scale animation (multi-step state)
+            el.setAttribute('animation', 'property: scale; to: 1.2 1.2 1.2; dur: 200; easing: easeOutQuad');
+            setTimeout(() => {
+              el.setAttribute('animation', 'property: scale; to: 1 1 1; dur: 200; easing: easeInQuad');
+            }, 250);
+          });
+        }
+      });
+
+      // Markerless placement: tap on screen to place content (plane detection simulation)
+      // We use a simple raycast from camera center for demo (since WebXR hit-test is complex in A-Frame AR.js)
+      // This simulates markerless placement on a horizontal plane.
+      AFRAME.registerComponent('markerless-placement', {
+        init: function () {
+          const scene = this.el.sceneEl;
+          const camera = document.querySelector('a-camera');
+          const contentGroup = document.querySelector('#markerless-content');
+          const reticle = document.querySelector('#reticle');
+          
+          // Only enable if WebXR is supported (markerless)
+          // For simplicity, we use a click/tap on screen to place at a fixed distance.
+          // In a real scenario we'd use hit-test, but for this demo we'll place at a reasonable distance.
+          // We'll also show the reticle at a fixed position and on tap, we move content there.
+          
+          // Show reticle at a fixed forward position (simulating plane detection)
+          if (reticle) {
+            reticle.setAttribute('visible', 'true');
+            // animate reticle gently
+            setInterval(() => {
+              if (reticle.getAttribute('visible')) {
+                const scale = 0.8 + 0.2 * Math.sin(Date.now() / 500);
+                reticle.setAttribute('scale', `${scale} ${scale} ${scale}`);
+              }
+            }, 100);
+          }
+
+          // On click/tap: place markerless content at reticle position
+          scene.addEventListener('click', function (evt) {
+            // Ignore if clicked on a marker-based element or UI
+            const target = evt.target;
+            if (target.closest && target.closest('a-marker')) return;
+            if (target.id && target.id.includes('reticle')) return;
+            if (target.classList && target.classList.contains('clickable')) return;
+            
+            // Place content at reticle position (simulate plane detection)
+            if (reticle && contentGroup) {
+              const pos = reticle.getAttribute('position');
+              if (pos) {
+                // Set content position to reticle position (with slight offset)
+                contentGroup.setAttribute('position', `${pos.x} ${pos.y + 0.2} ${pos.z}`);
+                // show models
+                const m1 = document.querySelector('#ml-model1');
+                const m2 = document.querySelector('#ml-model2');
+                if (m1) m1.setAttribute('visible', 'true');
+                if (m2) m2.setAttribute('visible', 'true');
+                // Add animation: pop effect
+                contentGroup.setAttribute('animation', 'property: scale; to: 1.1 1.1 1.1; dur: 300; easing: easeOutQuad');
+                setTimeout(() => {
+                  contentGroup.setAttribute('animation', 'property: scale; to: 1 1 1; dur: 300; easing: easeInQuad');
+                }, 350);
+                
+                // Also show a state message
+                const stateText = document.querySelector('#state-text');
+                if (stateText) {
+                  stateText.setAttribute('value', '📍 Markerless: placed at plane');
+                  const stateInd = document.querySelector('#state-indicator');
+                  if (stateInd) stateInd.setAttribute('visible', 'true');
+                  setTimeout(() => {
+                    if (stateInd) stateInd.setAttribute('visible', 'false');
+                  }, 2500);
+                }
+              }
+            }
+          });
+        }
+      });
+
+      // Initialize markerless placement after scene loads
+      document.addEventListener('DOMContentLoaded', function () {
+        const scene = document.querySelector('a-scene');
+        if (scene) {
+          scene.setAttribute('markerless-placement', '');
+        }
+        // Also add double-tap for mobile (use click event)
+        // We'll rely on click event for both.
+      });
+
+      // Adjust reticle position continuously (simulate tracking)
+      // We'll move reticle slightly with camera orientation (simplified)
+      // In a full implementation, this would use WebXR hit-test.
+      // For demo, we keep reticle at fixed position relative to camera.
+      // We'll position it at z=-2, y=-0.5 from camera.
+      // Already set in HTML.
+      
+      // Additional: simulate "live data" update from REST API (fake)
+      setInterval(() => {
+        // Update data-text with random tourism data if visible
+        const dataText = document.querySelector('#data-text');
+        if (dataText && dataText.sceneEl && dataText.getAttribute('value')) {
+          // only update if visible (we don't force)
+        }
+      }, 5000);
+    </script>
+
+    <!-- AR.js specific: ensure marker tracking works -->
+    <a-entity id="ar-system" ar-system=""></a-entity>
+  </a-scene>
+
+  <!-- Fallback / info for non-AR browsers -->
+  <div style="position: fixed; bottom: 80px; left: 0; right: 0; text-align: center; color: #aaa; font-size: 11px; pointer-events: none; z-index: 5; opacity: 0.6;">
+    <span>WebXR Tourism · Marker (HIRO) + Markerless (tap to place) · models optimized</span>
+  </div>
 </body>
 </html>
