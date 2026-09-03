@@ -1,268 +1,877 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-<title>Heritage AR Guide — Marker Mode</title>
 
-<!-- A-Frame + AR.js -->
-<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/ar.js@2.2.4/aframe/build/aframe-ar.min.js"></script>
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width,
+           initial-scale=1,
+           maximum-scale=1,
+           user-scalable=no,
+           viewport-fit=cover"
+>
+
+<title>Heritage AR Guide - Marker AR</title>
+
+
+<!-- A-Frame -->
+<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+
+<!-- AR.js Marker Tracking -->
+<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+
 
 <style>
-  *{margin:0;padding:0;}
-  body{overflow:hidden;background:#000;font-family:'Segoe UI',sans-serif;}
-  #ui{
-    position:fixed;inset:0;pointer-events:none;z-index:20;
-  }
-  #topbar{
-    position:absolute;top:0;left:0;right:0;
-    display:flex;justify-content:space-between;
-    padding:16px;
-    background:linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
-    pointer-events:auto;
-  }
-  #topbar a{
-    color:#fff;text-decoration:none;font-size:14px;font-weight:600;
-    background:rgba(0,0,0,0.5);padding:8px 16px;border-radius:20px;
-  }
-  #status{
-    color:#fff;font-size:13px;
-    background:rgba(0,0,0,0.5);padding:8px 16px;border-radius:20px;
-  }
-  #controls{
-    position:absolute;bottom:0;left:0;right:0;
-    display:flex;justify-content:center;gap:12px;
-    padding:16px 20px;
-    background:linear-gradient(to top, rgba(0,0,0,0.6), transparent);
-    pointer-events:auto;
-  }
-  button{
-    border:none;border-radius:30px;padding:10px 20px;
-    font-size:13px;font-weight:600;
-    background:rgba(255,255,255,0.2);color:#fff;
-    backdrop-filter:blur(8px);cursor:pointer;
-    transition:all 0.3s;
-  }
-  button:active{transform:scale(0.95);}
-  button.active{
-    background:#c9a13a;color:#2a2320;
-  }
-  #hint{
-    position:absolute;bottom:80px;left:50%;transform:translateX(-50%);
-    color:#fff;background:rgba(0,0,0,0.7);
-    padding:10px 20px;border-radius:12px;font-size:13px;
-    text-align:center;pointer-events:none;max-width:80%;
-  }
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+
+  width: 100%;
+  height: 100%;
+
+  overflow: hidden;
+
+  background: transparent;
+
+  font-family: Arial, sans-serif;
+
+}
+
+
+/* =========================
+   AR SCENE
+   ========================= */
+
+a-scene {
+
+  position: fixed;
+
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 100%;
+
+  z-index: 1;
+
+}
+
+
+/* =========================
+   UI
+   ========================= */
+
+#ui {
+
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 20;
+
+  pointer-events: none;
+
+}
+
+
+/* =========================
+   TOP BAR
+   ========================= */
+
+#topbar {
+
+  position: absolute;
+
+  top: 0;
+  left: 0;
+  right: 0;
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  padding:
+    max(16px, env(safe-area-inset-top))
+    16px
+    16px
+    16px;
+
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(0,0,0,0.65),
+      transparent
+    );
+
+}
+
+
+/* Home button */
+
+#home {
+
+  pointer-events: auto;
+
+  color: white;
+
+  text-decoration: none;
+
+  background: rgba(0,0,0,0.55);
+
+  padding: 9px 16px;
+
+  border-radius: 25px;
+
+  font-size: 14px;
+
+  font-weight: 600;
+
+}
+
+
+/* Status */
+
+#status {
+
+  color: white;
+
+  background: rgba(0,0,0,0.55);
+
+  padding: 9px 16px;
+
+  border-radius: 25px;
+
+  font-size: 13px;
+
+  font-weight: 600;
+
+}
+
+
+/* =========================
+   HINT
+   ========================= */
+
+#hint {
+
+  position: absolute;
+
+  top: 75px;
+
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  color: white;
+
+  background: rgba(0,0,0,0.55);
+
+  padding: 9px 18px;
+
+  border-radius: 20px;
+
+  font-size: 13px;
+
+  text-align: center;
+
+}
+
+
+/* =========================
+   BOTTOM CONTROLS
+   ========================= */
+
+#controls {
+
+  position: absolute;
+
+  bottom: 0;
+
+  left: 0;
+
+  right: 0;
+
+  display: flex;
+
+  justify-content: center;
+
+  gap: 12px;
+
+  padding:
+    16px
+    20px
+    max(20px, env(safe-area-inset-bottom));
+
+  background:
+    linear-gradient(
+      to top,
+      rgba(0,0,0,0.65),
+      transparent
+    );
+
+  pointer-events: auto;
+
+}
+
+
+/* Buttons */
+
+button {
+
+  border: none;
+
+  border-radius: 30px;
+
+  padding: 12px 20px;
+
+  font-size: 14px;
+
+  font-weight: 600;
+
+  background: rgba(255,255,255,0.2);
+
+  color: white;
+
+  backdrop-filter: blur(8px);
+
+  -webkit-backdrop-filter: blur(8px);
+
+}
+
+
+/* Active */
+
+button.active {
+
+  background: #c9a13a;
+
+  color: #2a2320;
+
+}
+
 </style>
+
 </head>
+
+
 <body>
 
+
+<!-- =========================
+     USER INTERFACE
+     ========================= -->
+
 <div id="ui">
+
+
   <div id="topbar">
-    <a href="index.html">← Home</a>
-    <span id="status">🎯 Point at HIRO marker</span>
+
+    <a
+      id="home"
+      href="index.html"
+    >
+      ← Home
+    </a>
+
+
+    <div id="status">
+      🎯 Point at HIRO marker
+    </div>
+
   </div>
-  <div id="hint">🔍 Show the HIRO marker to see the artifact</div>
+
+
+  <div id="hint">
+
+    🔍 Show the HIRO marker to see the artifact
+
+  </div>
+
+
   <div id="controls">
-    <button id="infoBtn" onclick="toggleInfo()">ℹ️ Artifact info</button>
-    <button id="spinBtn" class="active" onclick="toggleSpin()">🔄 Auto-Rotate</button>
+
+    <button
+      id="infoBtn"
+      onclick="toggleInfo()"
+    >
+      ℹ️ Artifact Info
+    </button>
+
+
+    <button
+      id="spinBtn"
+      class="active"
+      onclick="toggleSpin()"
+    >
+      🔄 Auto-Rotate
+    </button>
+
   </div>
+
 </div>
 
-<a-scene embedded vr-mode-ui="enabled: false" arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono; matrixCodeType: 3x3;">
-  
-  <a-marker preset="hiro" id="hiroMarker">
 
-    <!-- ========================================== -->
-    <!-- RAKSHA MASK - Made with geometry shapes    -->
-    <!-- ========================================== -->
-    <a-entity 
+
+<!-- =========================
+     AR SCENE
+     ========================= -->
+
+<a-scene
+
+  embedded
+
+  vr-mode-ui="enabled: false"
+
+  renderer="
+    alpha: true;
+    antialias: true;
+    colorManagement: true;
+  "
+
+  arjs="
+    sourceType: webcam;
+    videoTexture: true;
+    debugUIEnabled: false;
+    detectionMode: mono;
+    matrixCodeType: 3x3;
+  "
+
+>
+
+
+  <!-- =========================
+       HIRO MARKER
+       ========================= -->
+
+  <a-marker
+
+    id="hiroMarker"
+
+    preset="hiro"
+
+    emitevents="true"
+
+    smooth="true"
+
+    smoothCount="5"
+
+    smoothTolerance="0.01"
+
+    smoothThreshold="5"
+
+  >
+
+
+    <!-- =========================
+         RAKSHA MASK
+         ========================= -->
+
+    <a-entity
+
       id="artifact"
+
       position="0 0.5 0"
+
       scale="0.2 0.2 0.2"
+
     >
-      <!-- Base face - flattened sphere -->
-      <a-entity 
-        geometry="primitive: sphere; radius: 0.35; segmentsHeight: 4; segmentsWidth: 8;" 
-        material="color: #8B4513; roughness: 0.6; metalness: 0.3;"
-        position="0 0.05 0" 
-        scale="1 1.1 0.35"
-      ></a-entity>
 
-      <!-- Eyes - gold -->
-      <a-entity 
-        geometry="primitive: sphere; radius: 0.07;" 
-        material="color: #FFD700; emissive: #FFD700; emissiveIntensity: 0.4;"
-        position="-0.15 0.1 0.15"
-      ></a-entity>
-      <a-entity 
-        geometry="primitive: sphere; radius: 0.07;" 
-        material="color: #FFD700; emissive: #FFD700; emissiveIntensity: 0.4;"
-        position="0.15 0.1 0.15"
-      ></a-entity>
 
-      <!-- Pupils - dark -->
-      <a-entity 
-        geometry="primitive: sphere; radius: 0.03;" 
-        material="color: #1a1a1a;"
-        position="-0.15 0.1 0.2"
-      ></a-entity>
-      <a-entity 
-        geometry="primitive: sphere; radius: 0.03;" 
-        material="color: #1a1a1a;"
-        position="0.15 0.1 0.2"
-      ></a-entity>
+      <!-- Face -->
 
-      <!-- Mouth - red smile -->
-      <a-entity 
-        geometry="primitive: torus; radius: 0.09; tube: 0.025; thetaStart: 0; thetaLength: 180;" 
-        material="color: #8B0000; emissive: #660000; emissiveIntensity: 0.2;"
-        position="0 -0.08 0.15" 
+      <a-entity
+
+        geometry="
+          primitive: sphere;
+          radius: 0.35;
+          segmentsHeight: 16;
+          segmentsWidth: 32;
+        "
+
+        material="
+          color: #8B4513;
+          roughness: 0.6;
+          metalness: 0.2;
+        "
+
+        position="0 0 0"
+
+        scale="1 1.1 0.4"
+
+      >
+      </a-entity>
+
+
+      <!-- LEFT EYE -->
+
+      <a-sphere
+
+        radius="0.07"
+
+        position="-0.15 0.10 0.15"
+
+        material="
+          color: #FFD700;
+          emissive: #FFD700;
+          emissiveIntensity: 0.4;
+        "
+
+      >
+      </a-sphere>
+
+
+      <!-- RIGHT EYE -->
+
+      <a-sphere
+
+        radius="0.07"
+
+        position="0.15 0.10 0.15"
+
+        material="
+          color: #FFD700;
+          emissive: #FFD700;
+          emissiveIntensity: 0.4;
+        "
+
+      >
+      </a-sphere>
+
+
+      <!-- LEFT PUPIL -->
+
+      <a-sphere
+
+        radius="0.03"
+
+        position="-0.15 0.10 0.21"
+
+        color="#111111"
+
+      >
+      </a-sphere>
+
+
+      <!-- RIGHT PUPIL -->
+
+      <a-sphere
+
+        radius="0.03"
+
+        position="0.15 0.10 0.21"
+
+        color="#111111"
+
+      >
+      </a-sphere>
+
+
+      <!-- NOSE -->
+
+      <a-cone
+
+        radius-bottom="0.05"
+
+        radius-top="0.01"
+
+        height="0.12"
+
+        position="0 -0.01 0.20"
+
         rotation="90 0 0"
-      ></a-entity>
 
-      <!-- Nose -->
-      <a-entity 
-        geometry="primitive: cone; radius: 0.04; height: 0.08;" 
-        material="color: #A0522D;"
-        position="0 -0.01 0.2" 
+        color="#A0522D"
+
+      >
+      </a-cone>
+
+
+      <!-- MOUTH -->
+
+      <a-torus
+
+        radius="0.10"
+
+        radius-tubular="0.025"
+
+        arc="180"
+
+        position="0 -0.10 0.16"
+
         rotation="90 0 0"
-      ></a-entity>
 
-      <!-- Traditional decorations - top -->
-      <a-entity 
-        geometry="primitive: cylinder; radius: 0.02; height: 0.2;" 
-        material="color: #FF6B6B;"
-        position="0 0.3 0.08" 
+        color="#8B0000"
+
+      >
+      </a-torus>
+
+
+      <!-- TOP DECORATION -->
+
+      <a-cylinder
+
+        radius="0.025"
+
+        height="0.20"
+
+        position="0 0.34 0.05"
+
         rotation="90 0 0"
-      ></a-entity>
-      <a-entity 
-        geometry="primitive: sphere; radius: 0.07;" 
-        material="color: #FFD700; emissive: #FFD700; emissiveIntensity: 0.2;"
-        position="0 0.4 0.08"
-      ></a-entity>
 
-      <!-- Side decorations -->
-      <a-entity 
-        geometry="primitive: sphere; radius: 0.05;" 
-        material="color: #FF6B6B;"
-        position="-0.25 0.15 0.08"
-      ></a-entity>
-      <a-entity 
-        geometry="primitive: sphere; radius: 0.05;" 
-        material="color: #FF6B6B;"
-        position="0.25 0.15 0.08"
-      ></a-entity>
+        color="#FF6B6B"
 
-      <!-- Bottom decoration -->
-      <a-entity 
-        geometry="primitive: cylinder; radius: 0.03; height: 0.08;" 
-        material="color: #FFD700;"
-        position="0 -0.2 0.08" 
-        rotation="0 0 0"
-      ></a-entity>
+      >
+      </a-cylinder>
 
-      <!-- Lighting -->
-      <a-light type="point" intensity="1.0" position="0 1.5 0.8" color="#ffe6b0"></a-light>
+
+      <a-sphere
+
+        radius="0.07"
+
+        position="0 0.44 0.05"
+
+        color="#FFD700"
+
+      >
+      </a-sphere>
+
+
+      <!-- LEFT DECORATION -->
+
+      <a-sphere
+
+        radius="0.05"
+
+        position="-0.27 0.15 0.08"
+
+        color="#FF6B6B"
+
+      >
+      </a-sphere>
+
+
+      <!-- RIGHT DECORATION -->
+
+      <a-sphere
+
+        radius="0.05"
+
+        position="0.27 0.15 0.08"
+
+        color="#FF6B6B"
+
+      >
+      </a-sphere>
+
+
+      <!-- LIGHT -->
+
+      <a-light
+
+        type="point"
+
+        intensity="1.2"
+
+        position="0 1.5 1"
+
+        color="#ffe6b0"
+
+      >
+      </a-light>
+
+
     </a-entity>
 
-    <!-- ========================================== -->
-    <!-- ROTATION ANIMATION                        -->
-    <!-- ========================================== -->
-    <a-animation
-      attribute="rotation"
-      to="0 360 0"
-      loop="true"
-      dur="12000"
-      easing="linear"
-      target="#artifact"
-    ></a-animation>
 
-    <!-- ========================================== -->
-    <!-- INFO TEXT - Hidden by default             -->
-    <!-- ========================================== -->
-    <a-text 
+
+    <!-- =========================
+         INFO TEXT
+         ========================= -->
+
+    <a-text
+
       id="infoText"
-      value="🎭 Raksha Mask — Kandyan tradition, 19th c. replica."
+
+      value="Raksha Mask - Kandyan Tradition"
+
       color="#f4ecdc"
+
       align="center"
+
       width="3"
-      position="0 1.2 0"
+
+      position="0 -0.45 0"
+
       visible="false"
-      background="true"
-      background-color="rgba(0,0,0,0.8)"
-      border-radius="0.1"
-      padding="0.2 0.3"
-      font-size="0.7"
-    ></a-text>
 
-    <!-- Decorative ring under artifact -->
+    >
+    </a-text>
+
+
+    <!-- =========================
+         BASE RING
+         ========================= -->
+
     <a-ring
-      radius-inner="0.4"
-      radius-outer="0.5"
-      material="color: #c9a13a; transparent: true; opacity: 0.2; side: double;"
-      position="0 0 0"
-      rotation="-90 0 0"
-    ></a-ring>
 
-    <a-light type="ambient" intensity="0.6" color="#ffffff"></a-light>
+      radius-inner="0.4"
+
+      radius-outer="0.5"
+
+      position="0 0 0"
+
+      rotation="-90 0 0"
+
+      material="
+        color: #c9a13a;
+        opacity: 0.35;
+        transparent: true;
+        side: double;
+      "
+
+    >
+    </a-ring>
+
+
+    <!-- LIGHT -->
+
+    <a-light
+
+      type="ambient"
+
+      intensity="1"
+
+      color="#ffffff"
+
+    >
+    </a-light>
+
+
   </a-marker>
 
+
+
+  <!-- CAMERA -->
+
   <a-entity camera></a-entity>
+
+
 </a-scene>
 
+
+
 <script>
-  var marker = document.querySelector('#hiroMarker');
-  var infoText = document.querySelector('#infoText');
-  var infoBtn = document.querySelector('#infoBtn');
-  var spinBtn = document.querySelector('#spinBtn');
-  var statusEl = document.querySelector('#status');
-  var hintEl = document.querySelector('#hint');
-  var infoOn = false;
-  var spinning = true;
-  var markerFound = false;
 
-  // Marker found
-  marker.addEventListener('markerFound', function() {
-    markerFound = true;
-    statusEl.textContent = '✅ Artifact detected!';
-    hintEl.textContent = '🎭 Raksha Mask is visible!';
-  });
 
-  // Marker lost
-  marker.addEventListener('markerLost', function() {
-    markerFound = false;
-    statusEl.textContent = '🎯 Point at HIRO marker';
-    hintEl.textContent = '🔍 Show the HIRO marker to see the artifact';
-  });
+/* =========================
+   ELEMENTS
+   ========================= */
 
-  // Toggle info text
-  function toggleInfo() {
-    infoOn = !infoOn;
-    infoText.setAttribute('visible', infoOn);
-    infoBtn.classList.toggle('active', infoOn);
+const marker =
+  document.querySelector("#hiroMarker");
+
+const status =
+  document.querySelector("#status");
+
+const hint =
+  document.querySelector("#hint");
+
+const infoText =
+  document.querySelector("#infoText");
+
+const infoBtn =
+  document.querySelector("#infoBtn");
+
+const spinBtn =
+  document.querySelector("#spinBtn");
+
+const artifact =
+  document.querySelector("#artifact");
+
+
+let infoVisible = false;
+
+let rotating = true;
+
+
+
+/* =========================
+   MARKER FOUND
+   ========================= */
+
+marker.addEventListener(
+  "markerFound",
+
+  function () {
+
+    console.log(
+      "HIRO MARKER FOUND"
+    );
+
+    status.textContent =
+      "✅ Marker detected!";
+
+    status.style.background =
+      "rgba(0,130,50,0.85)";
+
+    hint.textContent =
+      "🎭 Raksha Mask is visible!";
+
   }
 
-  // Toggle auto-rotation
-  function toggleSpin() {
-    spinning = !spinning;
-    spinBtn.classList.toggle('active', spinning);
-    var artifact = document.querySelector('#artifact');
-    var animation = document.querySelector('a-animation');
-    
-    if (spinning) {
-      animation.setAttribute('enabled', 'true');
-    } else {
-      animation.setAttribute('enabled', 'false');
-    }
+);
+
+
+
+/* =========================
+   MARKER LOST
+   ========================= */
+
+marker.addEventListener(
+  "markerLost",
+
+  function () {
+
+    console.log(
+      "HIRO MARKER LOST"
+    );
+
+    status.textContent =
+      "🎯 Point at HIRO marker";
+
+    status.style.background =
+      "rgba(0,0,0,0.55)";
+
+    hint.textContent =
+      "🔍 Show the HIRO marker to see the artifact";
+
   }
 
-  // Expose functions
-  window.toggleInfo = toggleInfo;
-  window.toggleSpin = toggleSpin;
+);
 
-  console.log('🏛️ Heritage AR Guide - Marker Mode with Raksha Mask');
+
+
+/* =========================
+   INFORMATION
+   ========================= */
+
+function toggleInfo() {
+
+  infoVisible =
+    !infoVisible;
+
+  infoText.setAttribute(
+    "visible",
+    infoVisible
+  );
+
+  infoBtn.classList.toggle(
+    "active",
+    infoVisible
+  );
+
+}
+
+
+
+/* =========================
+   ROTATION
+   ========================= */
+
+function toggleSpin() {
+
+  rotating =
+    !rotating;
+
+  spinBtn.classList.toggle(
+    "active",
+    rotating
+  );
+
+
+  if (rotating) {
+
+    artifact.setAttribute(
+
+      "animation",
+
+      "property: rotation;" +
+      "to: 0 360 0;" +
+      "loop: true;" +
+      "dur: 12000;" +
+      "easing: linear"
+
+    );
+
+  }
+
+  else {
+
+    artifact.removeAttribute(
+      "animation"
+    );
+
+  }
+
+}
+
+
+
+/* =========================
+   START ROTATION
+   ========================= */
+
+artifact.setAttribute(
+
+  "animation",
+
+  "property: rotation;" +
+  "to: 0 360 0;" +
+  "loop: true;" +
+  "dur: 12000;" +
+  "easing: linear"
+
+);
+
+
+
+/* =========================
+   CAMERA DEBUG
+   ========================= */
+
+window.addEventListener(
+  "load",
+
+  function () {
+
+    console.log(
+      "Heritage AR Guide loaded"
+    );
+
+    console.log(
+      "Browser:",
+      navigator.userAgent
+    );
+
+  }
+
+);
+
+
 </script>
+
+
 </body>
+
 </html>
