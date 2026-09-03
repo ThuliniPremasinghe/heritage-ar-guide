@@ -35,12 +35,14 @@
     transform:translateX(-50%);
     color:white;
     font-size:13px;
-    background:rgba(0,0,0,0.6);
-    padding:8px 16px;
+    background:rgba(0,0,0,0.7);
+    padding:10px 18px;
     border-radius:20px;
     text-align:center;
     max-width:80%;
     pointer-events:none;
+    backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,0.1);
   }
   #controls{
     position:absolute;
@@ -52,22 +54,30 @@
     gap:10px;
     pointer-events:auto;
   }
-  .row{display:flex;gap:10px;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
   button{
     border:none;
     border-radius:30px;
-    padding:10px 18px;
+    padding:10px 20px;
     font-size:13px;
     font-weight:600;
-    background:rgba(0,0,0,0.6);
+    background:rgba(0,0,0,0.7);
     color:white;
     backdrop-filter:blur(8px);
     cursor:pointer;
+    pointer-events:auto;
+    transition:all 0.2s;
+    border:1px solid rgba(255,255,255,0.1);
   }
-  button.active{background:#c9a13a;color:#2a2320;}
+  button:active{transform:scale(0.95);}
+  button.active{
+    background:#c9a13a;
+    color:#2a2320;
+    border-color:#c9a13a;
+  }
   #ar-button-container{
     position:fixed;
-    bottom:100px;
+    bottom:110px;
     left:50%;
     transform:translateX(-50%);
     z-index:20;
@@ -75,19 +85,25 @@
   }
   #ar-button-container button{
     background:#6e1f2a;
-    padding:14px 32px;
+    padding:14px 36px;
     font-size:16px;
     border-radius:40px;
     border:none;
     color:white;
     font-weight:700;
     cursor:pointer;
+    box-shadow:0 4px 20px rgba(110,31,42,0.4);
+    transition:all 0.2s;
+  }
+  #ar-button-container button:hover{
+    transform:scale(1.05);
+    box-shadow:0 6px 30px rgba(110,31,42,0.6);
   }
   #not-supported{
     position:fixed;
     inset:0;
     display:none;
-    background:rgba(0,0,0,0.9);
+    background:rgba(0,0,0,0.95);
     color:white;
     align-items:center;
     justify-content:center;
@@ -96,7 +112,19 @@
     padding:32px;
   }
   #not-supported.show{display:flex;}
-  #not-supported p{max-width:400px;line-height:1.6;}
+  #not-supported h2{color:#c9a13a;margin-bottom:16px;}
+  #not-supported p{max-width:400px;line-height:1.6;color:#ccc;}
+  #counter{
+    position:absolute;
+    top:130px;
+    right:20px;
+    color:white;
+    font-size:12px;
+    background:rgba(0,0,0,0.6);
+    padding:6px 12px;
+    border-radius:12px;
+    pointer-events:none;
+  }
 </style>
 </head>
 <body>
@@ -104,12 +132,15 @@
 <div id="ui">
   <div id="topbar">
     <a href="index.html">← Home</a>
+    <span id="counter">📦 0 objects</span>
   </div>
   <div id="hint">👆 Move phone to find a surface, then tap to place</div>
+  
   <div id="controls">
     <div class="row">
       <button id="selectCube" class="active" onclick="selectType('cube')">📦 Cube</button>
       <button id="selectSphere" onclick="selectType('sphere')">⚪ Sphere</button>
+      <button id="selectCone" onclick="selectType('cone')">🔺 Cone</button>
     </div>
     <div class="row">
       <button onclick="clearObjects()">🗑️ Clear All</button>
@@ -120,9 +151,12 @@
 <div id="ar-button-container"></div>
 <div id="not-supported">
   <div>
-    <h2>WebXR Not Supported</h2>
-    <p>This browser doesn't support WebXR with hit-testing.<br>
-    Please use Chrome on Android or a compatible AR device.</p>
+    <h2>🌐 WebXR Not Supported</h2>
+    <p>This browser doesn't support WebXR with hit-testing.<br><br>
+    <strong>Please use:</strong><br>
+    • Chrome on Android (ARCore compatible)<br>
+    • Safari on iOS 15+<br>
+    • Chrome on desktop with AR glasses</p>
   </div>
 </div>
 
@@ -147,16 +181,20 @@ let placedObjects = [];
 let selectedType = 'cube';
 let isDragging = false;
 let dragTarget = null;
+let dragOffset = new THREE.Vector3();
 
-// Get DOM elements
+// DOM elements
 const hint = document.getElementById('hint');
 const notSupported = document.getElementById('not-supported');
+const counter = document.getElementById('counter');
 
 // Export functions to window
 window.selectType = function(type) {
   selectedType = type;
   document.getElementById('selectCube').classList.toggle('active', type === 'cube');
   document.getElementById('selectSphere').classList.toggle('active', type === 'sphere');
+  document.getElementById('selectCone').classList.toggle('active', type === 'cone');
+  hint.textContent = `👆 Tap to place a ${type}`;
 };
 
 window.clearObjects = function() {
@@ -164,8 +202,13 @@ window.clearObjects = function() {
   placedObjects = [];
   isDragging = false;
   dragTarget = null;
+  updateCounter();
   hint.textContent = '👆 Move phone to find a surface, then tap to place';
 };
+
+function updateCounter() {
+  counter.textContent = `📦 ${placedObjects.length} objects`;
+}
 
 // Check WebXR support
 if (!('xr' in navigator)) {
@@ -174,34 +217,58 @@ if (!('xr' in navigator)) {
 
 function init() {
   scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x000000);
   
   camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
   
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.xr.enabled = true;
+  renderer.shadowMap.enabled = true;
   document.body.appendChild(renderer.domElement);
 
   // Lighting
   const ambient = new THREE.AmbientLight(0xffffff, 0.6);
   scene.add(ambient);
   
-  const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-  dirLight.position.set(0, 1, 0.5);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  dirLight.position.set(1, 2, 1);
+  dirLight.castShadow = true;
   scene.add(dirLight);
+  
+  const backLight = new THREE.DirectionalLight(0x8888ff, 0.3);
+  backLight.position.set(-1, 0.5, -1);
+  scene.add(backLight);
 
-  // Reticle (shows where objects will be placed)
-  const reticleGeo = new THREE.RingGeometry(0.05, 0.07, 32);
-  const reticleMat = new THREE.MeshBasicMaterial({ color: 0xc9a13a });
+  // Reticle
+  const reticleGeo = new THREE.RingGeometry(0.04, 0.06, 32);
+  const reticleMat = new THREE.MeshBasicMaterial({ 
+    color: 0xc9a13a,
+    transparent: true,
+    opacity: 0.9
+  });
   reticle = new THREE.Mesh(reticleGeo, reticleMat);
   reticle.rotation.x = -Math.PI / 2;
   reticle.visible = false;
   scene.add(reticle);
+  
+  // Add a subtle glow ring
+  const glowGeo = new THREE.RingGeometry(0.06, 0.065, 32);
+  const glowMat = new THREE.MeshBasicMaterial({ 
+    color: 0xffd700,
+    transparent: true,
+    opacity: 0.3
+  });
+  const glowRing = new THREE.Mesh(glowGeo, glowMat);
+  glowRing.rotation.x = -Math.PI / 2;
+  reticle.add(glowRing);
 
   // AR Button
   const arButton = ARButton.createButton(renderer, {
-    requiredFeatures: ['hit-test']
+    requiredFeatures: ['hit-test'],
+    optionalFeatures: ['dom-overlay'],
+    domOverlay: { root: document.getElementById('ui') }
   });
   document.getElementById('ar-button-container').appendChild(arButton);
 
@@ -216,44 +283,59 @@ function init() {
 
 function createObject(type) {
   const group = new THREE.Group();
+  let mesh;
+  
+  // Random colors for variety
+  const colors = [0xc9a13a, 0x6e1f2a, 0x2a6e3a, 0x1a3a6e, 0x8a4a2a];
+  const color = colors[Math.floor(Math.random() * colors.length)];
   
   if (type === 'cube') {
-    const geo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+    const geo = new THREE.BoxGeometry(0.08, 0.08, 0.08);
     const mat = new THREE.MeshStandardMaterial({ 
-      color: 0xc9a13a, 
-      metalness: 0.3, 
-      roughness: 0.4 
+      color: color,
+      metalness: 0.4,
+      roughness: 0.3
     });
-    const mesh = new THREE.Mesh(geo, mat);
+    mesh = new THREE.Mesh(geo, mat);
+    mesh.castShadow = true;
     group.add(mesh);
-  } else {
-    const geo = new THREE.SphereGeometry(0.06, 16, 16);
+  } else if (type === 'sphere') {
+    const geo = new THREE.SphereGeometry(0.05, 16, 16);
     const mat = new THREE.MeshStandardMaterial({ 
-      color: 0x6e1f2a, 
-      metalness: 0.5, 
-      roughness: 0.3 
+      color: color,
+      metalness: 0.6,
+      roughness: 0.2
     });
-    const mesh = new THREE.Mesh(geo, mat);
+    mesh = new THREE.Mesh(geo, mat);
+    mesh.castShadow = true;
     group.add(mesh);
-    // Small highlight
-    const highlight = new THREE.Mesh(
-      new THREE.SphereGeometry(0.03, 8, 8),
-      new THREE.MeshBasicMaterial({ color: 0xffd700 })
-    );
-    highlight.position.y = 0.04;
-    group.add(highlight);
+  } else { // cone
+    const geo = new THREE.ConeGeometry(0.04, 0.08, 8);
+    const mat = new THREE.MeshStandardMaterial({ 
+      color: color,
+      metalness: 0.3,
+      roughness: 0.4
+    });
+    mesh = new THREE.Mesh(geo, mat);
+    mesh.castShadow = true;
+    group.add(mesh);
   }
   
-  // Add glow effect
+  // Add a glowing aura
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: color,
+    transparent: true,
+    opacity: 0.15
+  });
   const glow = new THREE.Mesh(
-    new THREE.SphereGeometry(0.08, 8, 8),
-    new THREE.MeshBasicMaterial({ 
-      color: type === 'cube' ? 0xc9a13a : 0x6e1f2a, 
-      transparent: true, 
-      opacity: 0.2 
-    })
+    new THREE.SphereGeometry(type === 'sphere' ? 0.07 : 0.06, 8, 8),
+    glowMat
   );
   group.add(glow);
+  
+  // Add a small floating animation
+  group.userData.floatOffset = Math.random() * Math.PI * 2;
+  group.userData.rotationSpeed = 0.5 + Math.random() * 0.5;
   
   return group;
 }
@@ -276,8 +358,7 @@ function onSelect() {
   for (const obj of placedObjects) {
     const objPos = new THREE.Vector3();
     obj.getWorldPosition(objPos);
-    if (objPos.distanceTo(tapPos) < 0.12) {
-      // Start dragging this object
+    if (objPos.distanceTo(tapPos) < 0.1) {
       isDragging = true;
       dragTarget = obj;
       hint.textContent = '✋ Drag to move, tap again to drop';
@@ -293,6 +374,15 @@ function onSelect() {
   newObj.position.y += 0.05;
   scene.add(newObj);
   placedObjects.push(newObj);
+  updateCounter();
+  
+  // Brief feedback
+  hint.textContent = `✅ ${selectedType} placed! Tap again for more`;
+  setTimeout(() => {
+    if (!isDragging) {
+      hint.textContent = '👆 Tap to place more objects';
+    }
+  }, 1500);
 }
 
 function render(timestamp, frame) {
@@ -332,9 +422,15 @@ function render(timestamp, frame) {
   
   // Animate objects
   placedObjects.forEach((obj, i) => {
-    obj.rotation.y += 0.01;
-    obj.position.y += Math.sin(Date.now() / 1000 + i) * 0.0002;
+    obj.rotation.y += 0.01 * obj.userData.rotationSpeed;
+    obj.position.y += Math.sin(timestamp / 1000 + obj.userData.floatOffset) * 0.0003;
   });
+  
+  // Animate reticle
+  if (reticle.visible) {
+    const scale = 1 + Math.sin(timestamp / 500) * 0.1;
+    reticle.scale.set(scale, scale, scale);
+  }
   
   renderer.render(scene, camera);
 }
@@ -345,7 +441,11 @@ function onResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+// Start the app
 init();
+
+// Show error if any
+console.log('Markerless AR initialized');
 </script>
 </body>
 </html>
