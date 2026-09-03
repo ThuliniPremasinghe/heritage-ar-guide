@@ -93,11 +93,6 @@
     font-weight:700;
     cursor:pointer;
     box-shadow:0 4px 20px rgba(110,31,42,0.4);
-    transition:all 0.2s;
-  }
-  #ar-button-container button:hover{
-    transform:scale(1.05);
-    box-shadow:0 6px 30px rgba(110,31,42,0.6);
   }
   #not-supported{
     position:fixed;
@@ -155,8 +150,7 @@
     <p>This browser doesn't support WebXR with hit-testing.<br><br>
     <strong>Please use:</strong><br>
     • Chrome on Android (ARCore compatible)<br>
-    • Safari on iOS 15+<br>
-    • Chrome on desktop with AR glasses</p>
+    • Safari on iOS 15+</p>
   </div>
 </div>
 
@@ -181,20 +175,16 @@ let placedObjects = [];
 let selectedType = 'cube';
 let isDragging = false;
 let dragTarget = null;
-let dragOffset = new THREE.Vector3();
 
-// DOM elements
 const hint = document.getElementById('hint');
 const notSupported = document.getElementById('not-supported');
 const counter = document.getElementById('counter');
 
-// Export functions to window
 window.selectType = function(type) {
   selectedType = type;
   document.getElementById('selectCube').classList.toggle('active', type === 'cube');
   document.getElementById('selectSphere').classList.toggle('active', type === 'sphere');
   document.getElementById('selectCone').classList.toggle('active', type === 'cone');
-  hint.textContent = `👆 Tap to place a ${type}`;
 };
 
 window.clearObjects = function() {
@@ -203,14 +193,12 @@ window.clearObjects = function() {
   isDragging = false;
   dragTarget = null;
   updateCounter();
-  hint.textContent = '👆 Move phone to find a surface, then tap to place';
 };
 
 function updateCounter() {
   counter.textContent = `📦 ${placedObjects.length} objects`;
 }
 
-// Check WebXR support
 if (!('xr' in navigator)) {
   notSupported.classList.add('show');
 }
@@ -225,54 +213,27 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.xr.enabled = true;
-  renderer.shadowMap.enabled = true;
   document.body.appendChild(renderer.domElement);
 
-  // Lighting
   const ambient = new THREE.AmbientLight(0xffffff, 0.6);
   scene.add(ambient);
   
   const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
   dirLight.position.set(1, 2, 1);
-  dirLight.castShadow = true;
   scene.add(dirLight);
-  
-  const backLight = new THREE.DirectionalLight(0x8888ff, 0.3);
-  backLight.position.set(-1, 0.5, -1);
-  scene.add(backLight);
 
-  // Reticle
   const reticleGeo = new THREE.RingGeometry(0.04, 0.06, 32);
-  const reticleMat = new THREE.MeshBasicMaterial({ 
-    color: 0xc9a13a,
-    transparent: true,
-    opacity: 0.9
-  });
+  const reticleMat = new THREE.MeshBasicMaterial({ color: 0xc9a13a });
   reticle = new THREE.Mesh(reticleGeo, reticleMat);
   reticle.rotation.x = -Math.PI / 2;
   reticle.visible = false;
   scene.add(reticle);
-  
-  // Add a subtle glow ring
-  const glowGeo = new THREE.RingGeometry(0.06, 0.065, 32);
-  const glowMat = new THREE.MeshBasicMaterial({ 
-    color: 0xffd700,
-    transparent: true,
-    opacity: 0.3
-  });
-  const glowRing = new THREE.Mesh(glowGeo, glowMat);
-  glowRing.rotation.x = -Math.PI / 2;
-  reticle.add(glowRing);
 
-  // AR Button
   const arButton = ARButton.createButton(renderer, {
-    requiredFeatures: ['hit-test'],
-    optionalFeatures: ['dom-overlay'],
-    domOverlay: { root: document.getElementById('ui') }
+    requiredFeatures: ['hit-test']
   });
   document.getElementById('ar-button-container').appendChild(arButton);
 
-  // Controller for tap events
   const controller = renderer.xr.getController(0);
   controller.addEventListener('select', onSelect);
   scene.add(controller);
@@ -283,67 +244,31 @@ function init() {
 
 function createObject(type) {
   const group = new THREE.Group();
-  let mesh;
-  
-  // Random colors for variety
-  const colors = [0xc9a13a, 0x6e1f2a, 0x2a6e3a, 0x1a3a6e, 0x8a4a2a];
+  const colors = [0xc9a13a, 0x6e1f2a, 0x2a6e3a, 0x1a3a6e];
   const color = colors[Math.floor(Math.random() * colors.length)];
   
   if (type === 'cube') {
     const geo = new THREE.BoxGeometry(0.08, 0.08, 0.08);
-    const mat = new THREE.MeshStandardMaterial({ 
-      color: color,
-      metalness: 0.4,
-      roughness: 0.3
-    });
-    mesh = new THREE.Mesh(geo, mat);
-    mesh.castShadow = true;
-    group.add(mesh);
+    const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.4, roughness: 0.3 });
+    group.add(new THREE.Mesh(geo, mat));
   } else if (type === 'sphere') {
     const geo = new THREE.SphereGeometry(0.05, 16, 16);
-    const mat = new THREE.MeshStandardMaterial({ 
-      color: color,
-      metalness: 0.6,
-      roughness: 0.2
-    });
-    mesh = new THREE.Mesh(geo, mat);
-    mesh.castShadow = true;
-    group.add(mesh);
-  } else { // cone
+    const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.6, roughness: 0.2 });
+    group.add(new THREE.Mesh(geo, mat));
+  } else {
     const geo = new THREE.ConeGeometry(0.04, 0.08, 8);
-    const mat = new THREE.MeshStandardMaterial({ 
-      color: color,
-      metalness: 0.3,
-      roughness: 0.4
-    });
-    mesh = new THREE.Mesh(geo, mat);
-    mesh.castShadow = true;
-    group.add(mesh);
+    const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.3, roughness: 0.4 });
+    group.add(new THREE.Mesh(geo, mat));
   }
   
-  // Add a glowing aura
-  const glowMat = new THREE.MeshBasicMaterial({
-    color: color,
-    transparent: true,
-    opacity: 0.15
-  });
-  const glow = new THREE.Mesh(
-    new THREE.SphereGeometry(type === 'sphere' ? 0.07 : 0.06, 8, 8),
-    glowMat
-  );
-  group.add(glow);
-  
-  // Add a small floating animation
   group.userData.floatOffset = Math.random() * Math.PI * 2;
   group.userData.rotationSpeed = 0.5 + Math.random() * 0.5;
-  
   return group;
 }
 
 function onSelect() {
   if (!reticle.visible) return;
   
-  // If dragging, drop the object
   if (isDragging && dragTarget) {
     isDragging = false;
     dragTarget = null;
@@ -351,7 +276,6 @@ function onSelect() {
     return;
   }
   
-  // Check if tapping on existing object (drag)
   const tapPos = new THREE.Vector3();
   reticle.getWorldPosition(tapPos);
   
@@ -366,7 +290,6 @@ function onSelect() {
     }
   }
   
-  // Place new object
   const newObj = createObject(selectedType);
   const pos = new THREE.Vector3();
   reticle.getWorldPosition(pos);
@@ -375,14 +298,6 @@ function onSelect() {
   scene.add(newObj);
   placedObjects.push(newObj);
   updateCounter();
-  
-  // Brief feedback
-  hint.textContent = `✅ ${selectedType} placed! Tap again for more`;
-  setTimeout(() => {
-    if (!isDragging) {
-      hint.textContent = '👆 Tap to place more objects';
-    }
-  }, 1500);
 }
 
 function render(timestamp, frame) {
@@ -407,7 +322,6 @@ function render(timestamp, frame) {
         reticle.visible = true;
         reticle.matrix.fromArray(pose.transform.matrix);
         
-        // If dragging, move the target with reticle
         if (isDragging && dragTarget) {
           const pos = new THREE.Vector3();
           reticle.getWorldPosition(pos);
@@ -420,13 +334,11 @@ function render(timestamp, frame) {
     }
   }
   
-  // Animate objects
   placedObjects.forEach((obj, i) => {
     obj.rotation.y += 0.01 * obj.userData.rotationSpeed;
     obj.position.y += Math.sin(timestamp / 1000 + obj.userData.floatOffset) * 0.0003;
   });
   
-  // Animate reticle
   if (reticle.visible) {
     const scale = 1 + Math.sin(timestamp / 500) * 0.1;
     reticle.scale.set(scale, scale, scale);
@@ -441,11 +353,7 @@ function onResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// Start the app
 init();
-
-// Show error if any
-console.log('Markerless AR initialized');
 </script>
 </body>
 </html>
