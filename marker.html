@@ -141,7 +141,7 @@
         position="0 0 0"
       ></a-sphere>
       
-      <!-- Orbiting particles (simple spheres) -->
+      <!-- Orbiting particles -->
       <a-entity position="0.2 0 0">
         <a-sphere radius="0.015" material="color:#ffd700" 
           animation="property:position; to:-0.2 0 0; loop:true; dur:3000; easing:linear"></a-sphere>
@@ -152,23 +152,20 @@
       </a-entity>
     </a-entity>
 
-    <!-- Second Artifact - Small pedestal with object -->
+    <!-- Second Artifact - Pedestal with object -->
     <a-entity position="-0.3 0 0.15">
-      <!-- Base -->
       <a-cylinder
         radius="0.05"
         height="0.03"
         material="color:#6e1f2a; metalness:0.4; roughness:0.5;"
         position="0 0.015 0"
       ></a-cylinder>
-      <!-- Column -->
       <a-cylinder
         radius="0.02"
         height="0.1"
         material="color:#c9a13a; metalness:0.6; roughness:0.3;"
         position="0 0.065 0"
       ></a-cylinder>
-      <!-- Top sphere -->
       <a-sphere
         radius="0.04"
         material="color:#f4ecdc; metalness:0.2; roughness:0.3;"
@@ -183,7 +180,6 @@
     <a-light type="directional" intensity="0.8" color="#ffffff" position="1 1 -1"></a-light>
   </a-marker>
 
-  <!-- Fallback camera -->
   <a-entity camera></a-entity>
 </a-scene>
 
@@ -192,12 +188,10 @@ let infoVisible = false;
 let rotateOn = true;
 let markerFound = false;
 
-// Wait for scene to load
 document.addEventListener('DOMContentLoaded', function() {
   const status = document.getElementById('status');
   status.style.display = 'block';
   
-  // Hide status after 5 seconds if marker found
   setTimeout(() => {
     if (!markerFound) {
       status.textContent = '⚠️ Make sure the HIRO marker is in view';
@@ -206,7 +200,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }, 5000);
 });
 
-// Marker events
 const marker = document.querySelector('#hiroMarker');
 if (marker) {
   marker.addEventListener('markerFound', function() {
@@ -231,7 +224,6 @@ function toggleInfo() {
   document.getElementById('infoBtn').classList.toggle('active', infoVisible);
   
   if (infoVisible) {
-    // Update info text with some "live data" simulation
     const visitors = Math.floor(1200 + Math.random() * 800);
     infoText.innerHTML = `🏛️ Sacred Artifact · <br>👥 ${visitors} visitors today · 📍 Heritage Site #42`;
   }
@@ -252,27 +244,16 @@ function toggleRotation() {
 }
 
 function resetScene() {
-  // Reset rotation
   rotateOn = true;
   const artifact = document.querySelector('#artifact');
   if (artifact) {
     artifact.setAttribute('animation', 'property:rotation; to:0 360 0; loop:true; dur:10000; easing:linear');
     document.getElementById('rotateBtn').classList.add('active');
   }
-  
-  // Hide info
   infoVisible = false;
   document.getElementById('info-text').style.display = 'none';
   document.getElementById('infoBtn').classList.remove('active');
 }
-
-// Handle errors
-window.addEventListener('error', function(e) {
-  console.log('Error:', e.message);
-});
-
-// Show that camera is loading
-console.log('Marker-based AR loaded. Looking for HIRO marker...');
 </script>
 </body>
 </html>
