@@ -4,95 +4,55 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
 <title>Marker-Based AR</title>
-
-<!-- A-Frame + AR.js -->
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/ar.js@2.2.4/aframe/build/aframe-ar.min.js"></script>
-
 <style>
   *{margin:0;padding:0;}
   body{overflow:hidden;background:#000;font-family:'Segoe UI',sans-serif;}
-  
   #ui{
-    position:fixed;
-    inset:0;
-    pointer-events:none;
-    z-index:20;
+    position:fixed;inset:0;pointer-events:none;z-index:20;
   }
   #topbar{
-    position:absolute;
-    top:0;
-    left:0;
-    right:0;
-    display:flex;
-    justify-content:space-between;
+    position:absolute;top:0;left:0;right:0;
+    display:flex;justify-content:space-between;
     padding:16px;
     background:linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
     pointer-events:auto;
   }
   #topbar a{
-    color:#fff;
-    text-decoration:none;
-    font-size:14px;
-    font-weight:600;
-    background:rgba(0,0,0,0.5);
-    padding:8px 16px;
-    border-radius:20px;
+    color:#fff;text-decoration:none;font-size:14px;font-weight:600;
+    background:rgba(0,0,0,0.5);padding:8px 16px;border-radius:20px;
   }
   #status{
-    color:#fff;
-    font-size:13px;
-    background:rgba(0,0,0,0.5);
-    padding:8px 16px;
-    border-radius:20px;
+    color:#fff;font-size:13px;
+    background:rgba(0,0,0,0.5);padding:8px 16px;border-radius:20px;
   }
   #controls{
-    position:absolute;
-    bottom:0;
-    left:0;
-    right:0;
-    display:flex;
-    justify-content:center;
-    gap:12px;
+    position:absolute;bottom:0;left:0;right:0;
+    display:flex;justify-content:center;gap:12px;
     padding:16px 20px;
     background:linear-gradient(to top, rgba(0,0,0,0.6), transparent);
     pointer-events:auto;
   }
   button{
-    border:none;
-    border-radius:30px;
-    padding:10px 20px;
-    font-size:13px;
-    font-weight:600;
-    background:rgba(255,255,255,0.2);
-    color:#fff;
-    backdrop-filter:blur(8px);
-    cursor:pointer;
+    border:none;border-radius:30px;padding:10px 20px;
+    font-size:13px;font-weight:600;
+    background:rgba(255,255,255,0.2);color:#fff;
+    backdrop-filter:blur(8px);cursor:pointer;
   }
   button.active{
-    background:#c9a13a;
-    color:#2a2320;
+    background:#c9a13a;color:#2a2320;
   }
   button:active{transform:scale(0.95);}
   #hint{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    color:#fff;
-    background:rgba(0,0,0,0.7);
-    padding:12px 24px;
-    border-radius:12px;
-    font-size:14px;
-    text-align:center;
-    display:none;
-    pointer-events:none;
-    max-width:80%;
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    color:#fff;background:rgba(0,0,0,0.7);
+    padding:12px 24px;border-radius:12px;font-size:14px;
+    text-align:center;display:none;pointer-events:none;max-width:80%;
   }
 </style>
 </head>
 <body>
-
 <div id="ui">
   <div id="topbar">
     <a href="index.html">← Home</a>
@@ -105,70 +65,20 @@
   </div>
 </div>
 
-<a-scene
-  embedded
-  vr-mode-ui="enabled: false"
-  arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono; matrixCodeType: 3x3;"
->
-
-  <!-- Load models from CDN -->
+<a-scene embedded vr-mode-ui="enabled: false" arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono; matrixCodeType: 3x3;">
   <a-assets>
-    <!-- Using a publicly available GLTF model (Statue of Liberty as artifact) -->
     <a-asset-item id="artifact-model" src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/models/gltf/DamagedHelmet/glTF/DamagedHelmet.gltf"></a-asset-item>
   </a-assets>
 
-  <!-- HIRO Marker -->
   <a-marker preset="hiro" id="hiroMarker">
-    
-    <!-- Main artifact -->
-    <a-entity 
-      id="artifact"
-      gltf-model="#artifact-model"
-      position="0 0.3 0"
-      scale="0.5 0.5 0.5"
-      rotation="0 0 0"
-    >
-      <!-- Floating animation -->
-      <a-animation
-        attribute="position"
-        to="0 0.45 0"
-        dur="1500"
-        direction="alternate"
-        repeat="indefinite"
-        easing="easeInOutQuad"
-      ></a-animation>
+    <a-entity id="artifact" gltf-model="#artifact-model" position="0 0.3 0" scale="0.5 0.5 0.5" rotation="0 0 0">
+      <a-animation attribute="position" to="0 0.45 0" dur="1500" direction="alternate" repeat="indefinite" easing="easeInOutQuad"></a-animation>
     </a-entity>
-
-    <!-- Info text (initially hidden) -->
-    <a-text 
-      id="infoText"
-      value="🏛️ Ancient Artifact · Circa 5th Century · Cultural Heritage"
-      color="#f4ecdc"
-      align="center"
-      width="3"
-      position="0 -0.3 0"
-      visible="false"
-      background="true"
-      background-color="rgba(0,0,0,0.7)"
-      border-radius="0.1"
-      padding="0.2 0.3"
-    ></a-text>
-
-    <!-- Lighting -->
+    <a-text id="infoText" value="🏛️ Ancient Artifact · Circa 5th Century · Cultural Heritage" color="#f4ecdc" align="center" width="3" position="0 -0.3 0" visible="false" background="true" background-color="rgba(0,0,0,0.7)" border-radius="0.1" padding="0.2 0.3"></a-text>
     <a-light type="point" intensity="1.0" position="0 0.8 0.5" color="#ffd966"></a-light>
     <a-light type="ambient" intensity="0.6"></a-light>
-    
-    <!-- Decorative ring -->
-    <a-ring 
-      radius-inner="0.4"
-      radius-outer="0.45"
-      material="color: #c9a13a; transparent: true; opacity: 0.3; side: double"
-      position="0 0 0"
-      rotation="-90 0 0"
-    ></a-ring>
-
+    <a-ring radius-inner="0.4" radius-outer="0.45" material="color: #c9a13a; transparent: true; opacity: 0.3; side: double" position="0 0 0" rotation="-90 0 0"></a-ring>
   </a-marker>
-
   <a-entity camera></a-entity>
 </a-scene>
 
@@ -181,7 +91,6 @@
   let spinning = true;
   let markerFound = false;
 
-  // Marker detection events
   marker.addEventListener('markerFound', () => {
     markerFound = true;
     hint.style.display = 'none';
@@ -191,31 +100,26 @@
   marker.addEventListener('markerLost', () => {
     markerFound = false;
     document.getElementById('status').textContent = '🎯 Point at HIRO marker';
-    // Show hint after 3 seconds of not finding marker
     setTimeout(() => {
       if (!markerFound) hint.style.display = 'block';
     }, 3000);
   });
 
-  // Initial hint
   setTimeout(() => {
     if (!markerFound) hint.style.display = 'block';
   }, 2000);
 
-  // Toggle info text
   function toggleInfo() {
     infoVisible = !infoVisible;
     infoText.setAttribute('visible', infoVisible);
     infoBtn.classList.toggle('active', infoVisible);
   }
 
-  // Toggle auto-rotation
   function toggleSpin() {
     spinning = !spinning;
     const artifact = document.querySelector('#artifact');
     const btn = document.querySelector('#spinBtn');
     btn.classList.toggle('active', spinning);
-    
     if (spinning) {
       artifact.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear');
     } else {
@@ -223,7 +127,6 @@
     }
   }
 
-  // Expose functions to global scope
   window.toggleInfo = toggleInfo;
   window.toggleSpin = toggleSpin;
 </script>
