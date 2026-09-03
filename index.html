@@ -7,33 +7,33 @@
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
   body{
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    background: #f4ecdc;
-    color: #2a2320;
+    font-family:'Segoe UI',Tahoma,sans-serif;
+    background:#f5f0e8;
+    color:#2a2320;
     min-height:100vh;
     display:flex;
     flex-direction:column;
     align-items:center;
     padding:20px;
   }
-  .wrap{ max-width:640px; width:100%; padding:40px 0; }
+  .wrap{max-width:640px;width:100%;padding:30px 0;}
   h1{
     font-size:clamp(32px,7vw,48px);
-    margin:0 0 12px;
+    margin:0 0 8px;
     color:#4a141c;
   }
   .subtitle{
     font-size:16px;
     line-height:1.6;
-    color:#4a4038;
-    margin-bottom:32px;
+    color:#5a4f45;
+    margin-bottom:30px;
   }
   .cards{
     display:grid;
     grid-template-columns:1fr;
     gap:16px;
   }
-  @media(min-width:560px){ .cards{ grid-template-columns:1fr 1fr; } }
+  @media(min-width:560px){.cards{grid-template-columns:1fr 1fr;}}
   .card{
     border:2px solid #c9a13a;
     border-radius:12px;
@@ -55,7 +55,7 @@
     font-weight:700;
   }
   .card h2{
-    font-size:22px;
+    font-size:20px;
     margin:8px 0 6px;
     color:#4a141c;
   }
@@ -71,7 +71,7 @@
     color:#6e1f2a;
   }
   .note{
-    margin-top:32px;
+    margin-top:30px;
     padding:14px 16px;
     background:#fff4de;
     border:1px solid #c9a13a;
@@ -79,9 +79,9 @@
     font-size:13px;
     color:#5a4f45;
   }
-  .note a{ color:#6e1f2a; }
+  .note a{color:#6e1f2a;}
   footer{
-    margin-top:32px;
+    margin-top:30px;
     font-size:12px;
     color:#8a7d70;
   }
@@ -90,32 +90,26 @@
 <body>
 <div class="wrap">
   <h1>🏛️ Heritage AR Guide</h1>
-  <p class="subtitle">
-    Explore cultural artifacts through Augmented Reality.<br>
-    No app download required — works in your browser.
-  </p>
+  <p class="subtitle">Explore cultural artifacts through Augmented Reality.<br>No app download required.</p>
   
   <div class="cards">
     <a class="card" href="marker.html">
       <div class="tag">🎯 Marker-Based</div>
       <h2>Scan the Marker</h2>
-      <p>Point camera at the HIRO marker to see a 3D artifact appear with animation and info.</p>
+      <p>Point camera at the HIRO marker to see a 3D artifact appear.</p>
       <span class="arrow">Launch →</span>
     </a>
     <a class="card" href="markerless.html">
       <div class="tag">🌐 Markerless</div>
       <h2>Place Anywhere</h2>
-      <p>Tap any flat surface to place 3D artifacts. Drag, rearrange, and watch for collisions.</p>
+      <p>Tap any flat surface to place 3D artifacts in your space.</p>
       <span class="arrow">Launch →</span>
     </a>
   </div>
   
   <div class="note">
     📌 <strong>Before using marker mode:</strong> 
-    <a href="https://jeromeetienne.github.io/AR.js/data/images/HIRO.jpg" target="_blank">
-      Download and print the HIRO marker
-    </a>
-    — or show it on another screen.
+    <a href="https://jeromeetienne.github.io/AR.js/data/images/HIRO.jpg" target="_blank">Download and print the HIRO marker</a>
   </div>
   <footer>INTE 42312 — WebXR/WebAR Assignment</footer>
 </div>
