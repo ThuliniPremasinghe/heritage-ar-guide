@@ -3,90 +3,126 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-<title>Heritage AR Guide — Markerless Mode</title>
+<title>Markerless AR</title>
 <style>
-  :root{ --maroon:#6e1f2a; --gold:#c9a13a; --cream:#f4ecdc; }
-  html,body{ margin:0; padding:0; height:100%; overflow:hidden; font-family:'Inter',sans-serif; background:#000; }
-  canvas{ display:block; }
-
-  #ui{ position:fixed; inset:0; pointer-events:none; z-index:20; }
+  body{margin:0;overflow:hidden;background:#000;font-family:'Segoe UI',sans-serif;}
+  #ui{
+    position:fixed;
+    top:0;left:0;right:0;bottom:0;
+    pointer-events:none;
+    z-index:10;
+  }
   #topbar{
-    position:absolute; top:0; left:0; right:0;
-    display:flex; align-items:center; justify-content:space-between;
-    padding: max(14px, env(safe-area-inset-top)) 16px 14px;
-    background:linear-gradient(to bottom, rgba(20,10,8,0.55), transparent);
-    pointer-events:auto;
+    display:flex;
+    justify-content:space-between;
+    padding:16px 20px;
+    background:linear-gradient(to bottom,rgba(0,0,0,0.5),transparent);
   }
   #topbar a{
-    color:#fff; text-decoration:none; font-size:13px; font-weight:600;
-    background:rgba(0,0,0,0.35); padding:8px 12px; border-radius:20px;
-  }
-  #hint{
-    position:absolute; top:60px; left:50%; transform:translateX(-50%);
-    color:#fff; font-size:12px; font-weight:500; text-align:center;
-    background:rgba(0,0,0,0.45); padding:8px 14px; border-radius:20px;
-    pointer-events:none; max-width:80%;
-  }
-  #controls{
-    position:absolute; bottom:0; left:0; right:0;
-    display:flex; flex-direction:column; align-items:center; gap:10px;
-    padding: 18px 16px max(18px, env(safe-area-inset-bottom));
+    color:white;
+    text-decoration:none;
+    font-weight:600;
+    font-size:14px;
+    background:rgba(0,0,0,0.4);
+    padding:8px 16px;
+    border-radius:20px;
     pointer-events:auto;
   }
-  .row{ display:flex; gap:10px; }
-  button.pill{
-    border:none; border-radius:999px; padding:12px 18px;
-    background:rgba(0,0,0,0.55); color:#fff; font-size:13px; font-weight:600;
-    backdrop-filter: blur(6px);
+  #hint{
+    position:absolute;
+    top:80px;
+    left:50%;
+    transform:translateX(-50%);
+    color:white;
+    font-size:13px;
+    background:rgba(0,0,0,0.6);
+    padding:8px 16px;
+    border-radius:20px;
+    text-align:center;
+    max-width:80%;
+    pointer-events:none;
   }
-  button.pill.active{ background:var(--gold); color:#2a2320; }
-  button.pill:active{ filter:brightness(0.85); }
-
-  #ar-button-holder{
-    position:fixed; bottom:96px; left:50%; transform:translateX(-50%);
-    z-index:30; pointer-events:auto;
+  #controls{
+    position:absolute;
+    bottom:30px;
+    left:0;right:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    pointer-events:auto;
   }
-  #ar-button-holder button{
-    padding:14px 28px; border-radius:999px; border:none;
-    background:var(--maroon); color:#fff; font-weight:700; font-size:14px;
+  .row{display:flex;gap:10px;}
+  button{
+    border:none;
+    border-radius:30px;
+    padding:10px 18px;
+    font-size:13px;
+    font-weight:600;
+    background:rgba(0,0,0,0.6);
+    color:white;
+    backdrop-filter:blur(8px);
+    cursor:pointer;
   }
-
+  button.active{background:#c9a13a;color:#2a2320;}
+  #ar-button-container{
+    position:fixed;
+    bottom:100px;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:20;
+    pointer-events:auto;
+  }
+  #ar-button-container button{
+    background:#6e1f2a;
+    padding:14px 32px;
+    font-size:16px;
+    border-radius:40px;
+    border:none;
+    color:white;
+    font-weight:700;
+    cursor:pointer;
+  }
   #not-supported{
-    position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-    background:var(--cream); color:#2a2320; text-align:center; padding:32px; z-index:50;
+    position:fixed;
+    inset:0;
+    display:none;
+    background:rgba(0,0,0,0.9);
+    color:white;
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+    text-align:center;
+    padding:32px;
   }
-  #not-supported.show{ display:flex; }
+  #not-supported.show{display:flex;}
+  #not-supported p{max-width:400px;line-height:1.6;}
 </style>
 </head>
 <body>
 
 <div id="ui">
   <div id="topbar">
-    <a href="index.html">&larr; Home</a>
+    <a href="index.html">← Home</a>
   </div>
-  <div id="hint">Move your phone slowly to find a flat surface, then tap to place</div>
-
+  <div id="hint">👆 Move phone to find a surface, then tap to place</div>
   <div id="controls">
     <div class="row">
-      <button class="pill active" id="selectMask" onclick="selectArtifact('mask')">Place: Mask</button>
-      <button class="pill" id="selectStupa" onclick="selectArtifact('stupa')">Place: Stupa</button>
+      <button id="selectCube" class="active" onclick="selectType('cube')">📦 Cube</button>
+      <button id="selectSphere" onclick="selectType('sphere')">⚪ Sphere</button>
     </div>
     <div class="row">
-      <button class="pill" onclick="resetPlacedObjects()">↺ Reset exhibit</button>
+      <button onclick="clearObjects()">🗑️ Clear All</button>
     </div>
   </div>
 </div>
 
-<div id="ar-button-holder"></div>
-
+<div id="ar-button-container"></div>
 <div id="not-supported">
   <div>
-    <h2 style="font-family:serif;">WebXR AR not available</h2>
-    <p style="max-width:40ch;margin:0 auto;">
-      This device or browser doesn't support the WebXR Device API with
-      hit-testing (common on iOS Safari). Try the latest Chrome on an
-      ARCore-capable Android phone.
-    </p>
+    <h2>WebXR Not Supported</h2>
+    <p>This browser doesn't support WebXR with hit-testing.<br>
+    Please use Chrome on Android or a compatible AR device.</p>
   </div>
 </div>
 
@@ -103,262 +139,213 @@
 import * as THREE from 'three';
 import { ARButton } from 'three/addons/webxr/ARButton.js';
 
-/* ---------------------------------------------------------
-   State machine (per assignment requirement: multi-step
-   state management as part of the "complex interaction"
-   advanced feature).
-   idle -> reticle tracking a surface, nothing selected
-   dragging -> a placed artifact is currently being moved
---------------------------------------------------------- */
-let appState = 'idle';
-let currentArtifactType = 'mask'; // which prefab gets placed on next tap
-let selectedForDrag = null;       // the placed object currently being dragged
-
-let camera, scene, renderer;
-let controller;
+let scene, camera, renderer;
 let reticle;
 let hitTestSource = null;
 let hitTestSourceRequested = false;
+let placedObjects = [];
+let selectedType = 'cube';
+let isDragging = false;
+let dragTarget = null;
 
-const placedObjects = []; // { mesh, box3 }
-const clock = new THREE.Clock();
+// Get DOM elements
+const hint = document.getElementById('hint');
+const notSupported = document.getElementById('not-supported');
 
-init();
+// Export functions to window
+window.selectType = function(type) {
+  selectedType = type;
+  document.getElementById('selectCube').classList.toggle('active', type === 'cube');
+  document.getElementById('selectSphere').classList.toggle('active', type === 'sphere');
+};
+
+window.clearObjects = function() {
+  placedObjects.forEach(obj => scene.remove(obj));
+  placedObjects = [];
+  isDragging = false;
+  dragTarget = null;
+  hint.textContent = '👆 Move phone to find a surface, then tap to place';
+};
+
+// Check WebXR support
+if (!('xr' in navigator)) {
+  notSupported.classList.add('show');
+}
 
 function init() {
   scene = new THREE.Scene();
-
+  
   camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
-
+  
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
   renderer.xr.enabled = true;
   document.body.appendChild(renderer.domElement);
 
   // Lighting
-  const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1.1);
-  scene.add(hemi);
-  const dir = new THREE.DirectionalLight(0xffe6b0, 0.8);
-  dir.position.set(0.5, 1, 0.25);
-  scene.add(dir);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+  scene.add(ambient);
+  
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+  dirLight.position.set(0, 1, 0.5);
+  scene.add(dirLight);
 
-  // AR button — requires hit-test feature per assignment spec
-  const arButton = ARButton.createButton(renderer, {
-    requiredFeatures: ['hit-test'],
-    optionalFeatures: ['dom-overlay'],
-    domOverlay: { root: document.getElementById('ui') }
-  });
-  document.getElementById('ar-button-holder').appendChild(arButton);
-
-  if (!('xr' in navigator)) {
-    document.getElementById('not-supported').classList.add('show');
-  }
-
-  // Reticle: shows where a surface has been detected
-  const reticleGeo = new THREE.RingGeometry(0.06, 0.08, 32).rotateX(-Math.PI / 2);
+  // Reticle (shows where objects will be placed)
+  const reticleGeo = new THREE.RingGeometry(0.05, 0.07, 32);
   const reticleMat = new THREE.MeshBasicMaterial({ color: 0xc9a13a });
   reticle = new THREE.Mesh(reticleGeo, reticleMat);
-  reticle.matrixAutoUpdate = false;
+  reticle.rotation.x = -Math.PI / 2;
   reticle.visible = false;
   scene.add(reticle);
 
-  controller = renderer.xr.getController(0);
+  // AR Button
+  const arButton = ARButton.createButton(renderer, {
+    requiredFeatures: ['hit-test']
+  });
+  document.getElementById('ar-button-container').appendChild(arButton);
+
+  // Controller for tap events
+  const controller = renderer.xr.getController(0);
   controller.addEventListener('select', onSelect);
   scene.add(controller);
 
-  window.addEventListener('resize', onWindowResize);
-
+  window.addEventListener('resize', onResize);
   renderer.setAnimationLoop(render);
 }
 
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-const loader = new GLTFLoader();
-
-function buildMask() {
+function createObject(type) {
   const group = new THREE.Group();
-  loader.load('assets/models/mask.glb', (gltf) => {
-    gltf.scene.scale.set(0.3, 0.3, 0.3);
-    group.add(gltf.scene);
-  });
-  group.userData.type = 'mask';
+  
+  if (type === 'cube') {
+    const geo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+    const mat = new THREE.MeshStandardMaterial({ 
+      color: 0xc9a13a, 
+      metalness: 0.3, 
+      roughness: 0.4 
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    group.add(mesh);
+  } else {
+    const geo = new THREE.SphereGeometry(0.06, 16, 16);
+    const mat = new THREE.MeshStandardMaterial({ 
+      color: 0x6e1f2a, 
+      metalness: 0.5, 
+      roughness: 0.3 
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    group.add(mesh);
+    // Small highlight
+    const highlight = new THREE.Mesh(
+      new THREE.SphereGeometry(0.03, 8, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffd700 })
+    );
+    highlight.position.y = 0.04;
+    group.add(highlight);
+  }
+  
+  // Add glow effect
+  const glow = new THREE.Mesh(
+    new THREE.SphereGeometry(0.08, 8, 8),
+    new THREE.MeshBasicMaterial({ 
+      color: type === 'cube' ? 0xc9a13a : 0x6e1f2a, 
+      transparent: true, 
+      opacity: 0.2 
+    })
+  );
+  group.add(glow);
+  
   return group;
 }
 
-function buildStupa() {
-  const group = new THREE.Group();
-  const dome = new THREE.Mesh(
-    new THREE.SphereGeometry(0.09, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2),
-    new THREE.MeshStandardMaterial({ color: 0xf4ecdc, roughness: 0.5 })
-  );
-  const spire = new THREE.Mesh(
-    new THREE.ConeGeometry(0.02, 0.14, 8),
-    new THREE.MeshStandardMaterial({ color: 0xc9a13a, metalness: 0.4, roughness: 0.3 })
-  );
-  spire.position.y = 0.14;
-  group.add(dome, spire);
-  group.userData.type = 'stupa';
-  return group;
-}
-
-function makePrefab(type) {
-  return type === 'mask' ? buildMask() : buildStupa();
-}
-
-window.selectArtifact = function (type) {
-  currentArtifactType = type;
-  document.getElementById('selectMask').classList.toggle('active', type === 'mask');
-  document.getElementById('selectStupa').classList.toggle('active', type === 'stupa');
-};
-
-window.resetPlacedObjects = function () {
-  placedObjects.forEach(o => scene.remove(o.mesh));
-  placedObjects.length = 0;
-  selectedForDrag = null;
-  appState = 'idle';
-};
-
-/* ---------------------------------------------------------
-   Placement: tap places a NEW artifact if the reticle is
-   visible and nothing is currently selected for drag.
-   If an existing placed object is tapped, it becomes the
-   drag target instead (state -> dragging) and a second tap
-   drops it (state -> idle).
---------------------------------------------------------- */
 function onSelect() {
-  if (selectedForDrag) {
-    // second tap: drop the object we were dragging
-    selectedForDrag = null;
-    appState = 'idle';
-    updateHint('Move your phone slowly to find a flat surface, then tap to place');
+  if (!reticle.visible) return;
+  
+  // If dragging, drop the object
+  if (isDragging && dragTarget) {
+    isDragging = false;
+    dragTarget = null;
+    hint.textContent = '👆 Tap to place new objects';
     return;
   }
-
-  // try to select an existing placed object first (tap-to-drag)
-  const hit = pickPlacedObject();
-  if (hit) {
-    selectedForDrag = hit;
-    appState = 'dragging';
-    updateHint('Dragging — move your phone, tap again to drop');
-    return;
-  }
-
-  // otherwise place a brand-new artifact at the reticle
-  if (reticle.visible) {
-    const prefab = makePrefab(currentArtifactType);
-    prefab.position.setFromMatrixPosition(reticle.matrix);
-    scene.add(prefab);
-    const entry = { mesh: prefab, box3: new THREE.Box3() };
-    placedObjects.push(entry);
-  }
-}
-
-function pickPlacedObject() {
-  // Simple heuristic: pick the placed object nearest the reticle position
-  // (stand-in for a full raycast against controller ray; keeps mobile
-  // tap-to-select reliable without extra input plumbing).
-  if (!reticle.visible || placedObjects.length === 0) return null;
-  const p = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
-  let closest = null;
-  let closestDist = 0.12; // selection radius in meters
+  
+  // Check if tapping on existing object (drag)
+  const tapPos = new THREE.Vector3();
+  reticle.getWorldPosition(tapPos);
+  
   for (const obj of placedObjects) {
-    const d = obj.mesh.position.distanceTo(p);
-    if (d < closestDist) {
-      closestDist = d;
-      closest = obj;
+    const objPos = new THREE.Vector3();
+    obj.getWorldPosition(objPos);
+    if (objPos.distanceTo(tapPos) < 0.12) {
+      // Start dragging this object
+      isDragging = true;
+      dragTarget = obj;
+      hint.textContent = '✋ Drag to move, tap again to drop';
+      return;
     }
   }
-  return closest;
-}
-
-/* ---------------------------------------------------------
-   Collision detection: on every frame, recompute bounding
-   boxes for all placed objects and flag any pair that
-   overlaps. The dragged object is blocked from settling on
-   top of another and flashes red while overlapping.
---------------------------------------------------------- */
-function updateCollisions() {
-  placedObjects.forEach(o => o.box3.setFromObject(o.mesh));
-
-  placedObjects.forEach(o => {
-    let colliding = false;
-    for (const other of placedObjects) {
-      if (other === o) continue;
-      if (o.box3.intersectsBox(other.box3)) {
-        colliding = true;
-        break;
-      }
-    }
-    setCollisionVisual(o.mesh, colliding);
-  });
-}
-
-function setCollisionVisual(group, colliding) {
-  group.traverse(child => {
-    if (child.isMesh) {
-      if (colliding) {
-        if (!child.userData._origColor) {
-          child.userData._origColor = child.material.color.getHex();
-        }
-        child.material.color.setHex(0xd93c3c);
-      } else if (child.userData._origColor !== undefined) {
-        child.material.color.setHex(child.userData._origColor);
-      }
-    }
-  });
-}
-
-function updateHint(text) {
-  document.getElementById('hint').textContent = text;
-}
-
-function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  
+  // Place new object
+  const newObj = createObject(selectedType);
+  const pos = new THREE.Vector3();
+  reticle.getWorldPosition(pos);
+  newObj.position.copy(pos);
+  newObj.position.y += 0.05;
+  scene.add(newObj);
+  placedObjects.push(newObj);
 }
 
 function render(timestamp, frame) {
   if (frame) {
     const referenceSpace = renderer.xr.getReferenceSpace();
     const session = renderer.xr.getSession();
-
-    if (!hitTestSourceRequested) {
+    
+    if (!hitTestSourceRequested && session) {
       session.requestReferenceSpace('viewer').then((viewerSpace) => {
         session.requestHitTestSource({ space: viewerSpace }).then((source) => {
           hitTestSource = source;
         });
       });
-      session.addEventListener('end', () => {
-        hitTestSourceRequested = false;
-        hitTestSource = null;
-      });
       hitTestSourceRequested = true;
     }
-
-    if (hitTestSource) {
-      const hitTestResults = frame.getHitTestResults(hitTestSource);
-      if (hitTestResults.length > 0) {
-        const hit = hitTestResults[0];
+    
+    if (hitTestSource && frame) {
+      const results = frame.getHitTestResults(hitTestSource);
+      if (results.length > 0) {
+        const hit = results[0];
         const pose = hit.getPose(referenceSpace);
         reticle.visible = true;
         reticle.matrix.fromArray(pose.transform.matrix);
-
-        // While dragging, continuously move the selected object to
-        // wherever the reticle (i.e. the detected surface under the
-        // phone) currently is.
-        if (appState === 'dragging' && selectedForDrag) {
-          selectedForDrag.mesh.position.setFromMatrixPosition(reticle.matrix);
+        
+        // If dragging, move the target with reticle
+        if (isDragging && dragTarget) {
+          const pos = new THREE.Vector3();
+          reticle.getWorldPosition(pos);
+          dragTarget.position.copy(pos);
+          dragTarget.position.y += 0.05;
         }
       } else {
         reticle.visible = false;
       }
     }
   }
-
-  updateCollisions();
+  
+  // Animate objects
+  placedObjects.forEach((obj, i) => {
+    obj.rotation.y += 0.01;
+    obj.position.y += Math.sin(Date.now() / 1000 + i) * 0.0002;
+  });
+  
   renderer.render(scene, camera);
 }
+
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+init();
 </script>
 </body>
 </html>
