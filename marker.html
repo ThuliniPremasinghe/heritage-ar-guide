@@ -5,12 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Heritage AR Guide — Marker AR</title>
 
-<!--
-  INTE 42312 requirement mapping (marker-based tracking requirement):
-  A-Frame 1.6.0 + AR.js 3.4.7 is the officially documented compatible pairing.
--->
-<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.7/aframe/build/aframe-ar.js"></script>
+<!-- USE COMPATIBLE VERSIONS - This is critical! -->
+<script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -34,6 +31,9 @@
     color:#fff; background:rgba(0,0,0,0.55); padding:9px 16px;
     border-radius:25px; font-size:13px; font-weight:600;
   }
+  #status.found {
+    background: rgba(0,180,50,0.85);
+  }
   #hint {
     position:absolute; top:75px; left:50%; transform:translateX(-50%);
     color:#fff; background:rgba(0,0,0,0.55); padding:9px 18px;
@@ -50,6 +50,7 @@
     border:none; border-radius:30px; padding:12px 20px;
     font-size:14px; font-weight:600; background:rgba(255,255,255,0.18);
     color:#fff; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    cursor: pointer;
   }
   button.pill.active { background:#c9a13a; color:#2a2320; }
 </style>
@@ -79,22 +80,35 @@
     <a-asset-item id="vase-model" src="assets/models/vase.glb"></a-asset-item>
   </a-assets>
 
+  <!-- THE MARKER -->
   <a-marker id="hiroMarker" preset="hiro" emitevents="true" smooth="true" smoothCount="5" smoothTolerance="0.01" smoothThreshold="5">
 
-    <!-- Model 1 of 2: real, downloaded .glb — adjust the scale value
-         below once you see it render; start here and tweak up/down. -->
+    <!-- VISUAL RING to confirm marker is detected -->
+    <a-ring radius-inner="0.35" radius-outer="0.45" 
+            rotation="-90 0 0"
+            material="color:#c9a13a; opacity:0.4; transparent:true; side:double">
+    </a-ring>
+
+    <!-- THE VASE MODEL -->
     <a-entity id="artifact"
               gltf-model="#vase-model"
               position="0 0 0"
-              scale="0.3 0.3 0.3"
+              scale="0.25 0.25 0.25"
               shadow="cast: true">
     </a-entity>
 
-    <a-text id="infoText" value="Porcelain Vase — Heritage Collection" color="#f4ecdc"
-            align="center" width="3" position="0 -0.45 0" visible="false"></a-text>
+    <!-- FALLBACK BOX - shows if model doesn't load -->
+    <a-box id="fallbackBox"
+           position="0 0.1 0"
+           material="color: #ff4444; opacity: 0.6; transparent: true"
+           scale="0.15 0.15 0.15"
+           visible="false">
+    </a-box>
 
-    <a-ring radius-inner="0.4" radius-outer="0.5" position="0 0 0" rotation="-90 0 0"
-            material="color:#c9a13a; opacity:0.35; transparent:true; side:double"></a-ring>
+    <a-text id="infoText" value="🏺 Porcelain Vase — Heritage Collection" 
+            color="#f4ecdc" align="center" width="3" 
+            position="0 -0.45 0" visible="false">
+    </a-text>
 
     <a-light type="ambient" intensity="1" color="#ffffff"></a-light>
     <a-light type="point" intensity="1.2" position="0 1.5 1" color="#ffe6b0"></a-light>
@@ -113,28 +127,45 @@ const infoText = document.querySelector('#infoText');
 const infoBtn  = document.querySelector('#infoBtn');
 const spinBtn  = document.querySelector('#spinBtn');
 const artifact = document.querySelector('#artifact');
+const fallbackBox = document.querySelector('#fallbackBox');
 
 let infoVisible = false;
 let rotating = true;
 
-// Log load success/failure so you can see in the console whether
-// vase.glb actually loaded, and what its real size/center looks like.
+// SHOW FALLBACK if model doesn't load after 5 seconds
+setTimeout(() => {
+  const modelLoaded = artifact.components['gltf-model']?.data;
+  if (!modelLoaded) {
+    console.warn('⚠️ Model not loaded, showing fallback box');
+    fallbackBox.setAttribute('visible', 'true');
+  }
+}, 5000);
+
+// LOG MODEL LOADING
 artifact.addEventListener('model-loaded', (e) => {
-  console.log('✅ vase.glb loaded successfully', e.detail.model);
-});
-artifact.addEventListener('model-error', (e) => {
-  console.error('❌ Failed to load vase.glb — check the path assets/models/vase.glb exists', e.detail);
+  console.log('✅ vase.glb loaded successfully!', e.detail);
+  fallbackBox.setAttribute('visible', 'false');
+  status.textContent = '✅ Vase Loaded!';
 });
 
+artifact.addEventListener('model-error', (e) => {
+  console.error('❌ Failed to load vase.glb — check the path assets/models/vase.glb exists', e.detail);
+  fallbackBox.setAttribute('visible', 'true');
+  status.textContent = '⚠️ Model not found';
+});
+
+// MARKER EVENTS
 marker.addEventListener('markerFound', () => {
+  console.log('✅ HIRO MARKER FOUND!');
   status.textContent = '✅ Marker detected!';
-  status.style.background = 'rgba(0,130,50,0.85)';
-  hint.textContent = '🏺 Porcelain Vase is visible!';
+  status.className = 'found';
+  hint.textContent = '🏺 Vase is visible!';
 });
 
 marker.addEventListener('markerLost', () => {
+  console.log('❌ Marker lost');
   status.textContent = '🎯 Point at HIRO marker';
-  status.style.background = 'rgba(0,0,0,0.55)';
+  status.className = '';
   hint.textContent = '🔍 Show the printed HIRO marker to see the artifact';
 });
 
@@ -154,6 +185,7 @@ function toggleSpin() {
   }
 }
 
+// START ROTATION
 artifact.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear');
 
 window.toggleInfo = toggleInfo;

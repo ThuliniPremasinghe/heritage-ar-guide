@@ -33,11 +33,11 @@
     padding: 18px 16px max(18px, env(safe-area-inset-bottom));
     pointer-events:auto;
   }
-  .row{ display:flex; gap:10px; }
+  .row{ display:flex; gap:10px; flex-wrap: wrap; justify-content: center; }
   button.pill{
     border:none; border-radius:999px; padding:12px 18px;
     background:rgba(0,0,0,0.55); color:#fff; font-size:13px; font-weight:600;
-    backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px); cursor: pointer;
   }
   button.pill.active{ background:var(--gold); color:#2a2320; }
   button.pill:active{ filter:brightness(0.85); }
@@ -49,6 +49,7 @@
   #ar-button-holder button{
     padding:14px 28px; border-radius:999px; border:none;
     background:var(--maroon); color:#fff; font-weight:700; font-size:14px;
+    cursor: pointer;
   }
 
   #not-supported{
@@ -64,12 +65,12 @@
   <div id="topbar">
     <a href="index.html">&larr; Home</a>
   </div>
-  <div id="hint">Move your phone slowly to find a flat surface, then tap to place</div>
+  <div id="hint">Move your phone to find a flat surface, then tap to place</div>
 
   <div id="controls">
     <div class="row">
-      <button class="pill active" id="selectVase" onclick="selectArtifact('vase')">Place: Vase</button>
-      <button class="pill" id="selectRoom" onclick="selectArtifact('room')">Place: Porcelain Room</button>
+      <button class="pill active" id="selectVase" onclick="selectArtifact('vase')">🏺 Place: Vase</button>
+      <button class="pill" id="selectRoom" onclick="selectArtifact('room')">🏛️ Place: Porcelain Room</button>
     </div>
     <div class="row">
       <button class="pill" onclick="resetPlacedObjects()">↺ Reset exhibit</button>
@@ -84,8 +85,7 @@
     <h2 style="font-family:serif;">WebXR AR not available</h2>
     <p style="max-width:40ch;margin:0 auto;">
       This device or browser doesn't support the WebXR Device API with
-      hit-testing (common on iOS Safari). Try the latest Chrome on an
-      ARCore-capable Android phone.
+      hit-testing. Try the latest Chrome on an ARCore-capable Android phone.
     </p>
   </div>
 </div>
@@ -104,19 +104,8 @@ import * as THREE from 'three';
 import { ARButton } from 'three/addons/webxr/ARButton.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-/* ---------------------------------------------------------
-   INTE 42312 — Option B (Complex Interaction):
-   1) Multi-step state management: idle -> dragging -> idle
-   2) Drag-and-drop object manipulation: tap to place, tap an
-      existing object to pick it up, move phone to drag it,
-      tap again to drop it.
-   3) Physical collision detection between 3D elements: on
-      every frame, bounding boxes of all placed objects are
-      checked pairwise; overlapping objects flash red.
---------------------------------------------------------- */
-let appState = 'idle';
-let currentArtifactType = 'vase'; // which prefab gets placed on next tap
-let selectedForDrag = null;       // the placed object currently being dragged
+let currentArtifactType = 'vase';
+let selectedForDrag = null;
 
 let camera, scene, renderer;
 let controller;
@@ -124,12 +113,9 @@ let reticle;
 let hitTestSource = null;
 let hitTestSourceRequested = false;
 
-const placedObjects = []; // { mesh, box3 }
+const placedObjects = [];
 const loader = new GLTFLoader();
-
-// Cache the loaded scenes once, then clone for each placement so we
-// don't re-download the .glb every time the user taps to place one.
-const modelCache = {}; // { vase: THREE.Object3D | null, room: THREE.Object3D | null }
+const modelCache = {};
 
 init();
 
@@ -150,8 +136,11 @@ function init() {
   const dir = new THREE.DirectionalLight(0xffe6b0, 0.8);
   dir.position.set(0.5, 1, 0.25);
   scene.add(dir);
+  const dir2 = new THREE.DirectionalLight(0xffffff, 0.4);
+  dir2.position.set(-0.5, 0.5, -0.25);
+  scene.add(dir2);
 
-  // AR button — requires hit-test feature per assignment spec
+  // AR Button
   const arButton = ARButton.createButton(renderer, {
     requiredFeatures: ['hit-test'],
     optionalFeatures: ['dom-overlay'],
@@ -163,7 +152,7 @@ function init() {
     document.getElementById('not-supported').classList.add('show');
   }
 
-  // Reticle: shows where a surface has been detected
+  // Reticle
   const reticleGeo = new THREE.RingGeometry(0.06, 0.08, 32).rotateX(-Math.PI / 2);
   const reticleMat = new THREE.MeshBasicMaterial({ color: 0xc9a13a });
   reticle = new THREE.Mesh(reticleGeo, reticleMat);
@@ -179,31 +168,23 @@ function init() {
 
   renderer.setAnimationLoop(render);
 
-  // Preload both models up front so placement isn't delayed by network.
+  // Preload models
   preloadModel('vase', 'assets/models/vase.glb');
   preloadModel('room', 'assets/models/the_porcelain_room.glb');
 }
 
-/* ---------------------------------------------------------
-   Model loading. Real .glb assets — cached once loaded, then
-   cloned for every new placement. Start scale values below are
-   guesses; adjust once you see how big each renders in AR —
-   the_porcelain_room.glb in particular may have been modelled
-   at full room scale, so it likely needs shrinking a lot more
-   than the vase to fit a tabletop.
---------------------------------------------------------- */
 function preloadModel(key, path) {
   loader.load(
     path,
     (gltf) => {
       modelCache[key] = gltf.scene;
       console.log(`✅ Loaded ${path}`);
-      updateHint(`Move your phone slowly to find a flat surface, then tap to place`);
+      updateHint(`Move your phone to find a flat surface, then tap to place`);
     },
     undefined,
     (error) => {
-      console.error(`❌ Failed to load ${path} — check the file exists at that path`, error);
-      updateHint(`⚠️ Couldn't load ${path.split('/').pop()} — check console`);
+      console.error(`❌ Failed to load ${path}`, error);
+      updateHint(`⚠️ Couldn't load ${path.split('/').pop()}`);
     }
   );
 }
@@ -211,7 +192,7 @@ function preloadModel(key, path) {
 function makePrefab(type) {
   const source = modelCache[type];
   if (!source) {
-    console.warn(`${type}.glb hasn't finished loading yet — try again in a moment.`);
+    console.warn(`${type}.glb hasn't loaded yet`);
     return null;
   }
   const group = source.clone(true);
@@ -219,8 +200,7 @@ function makePrefab(type) {
   if (type === 'vase') {
     group.scale.set(0.3, 0.3, 0.3);
   } else if (type === 'room') {
-    // Likely a much bigger source scale — shrink hard to sit on a table.
-    group.scale.set(0.05, 0.05, 0.05);
+    group.scale.set(0.06, 0.06, 0.06);
   }
   return group;
 }
@@ -235,31 +215,23 @@ window.resetPlacedObjects = function () {
   placedObjects.forEach(o => scene.remove(o.mesh));
   placedObjects.length = 0;
   selectedForDrag = null;
-  appState = 'idle';
+  updateHint('Move your phone to find a flat surface, then tap to place');
 };
 
-/* ---------------------------------------------------------
-   Placement / drag state machine
---------------------------------------------------------- */
 function onSelect() {
   if (selectedForDrag) {
-    // second tap: drop the object we were dragging
     selectedForDrag = null;
-    appState = 'idle';
-    updateHint('Move your phone slowly to find a flat surface, then tap to place');
+    updateHint('Tap to place a new artifact, or tap an existing one to drag it');
     return;
   }
 
-  // try to select an existing placed object first (tap-to-drag)
   const hit = pickPlacedObject();
   if (hit) {
     selectedForDrag = hit;
-    appState = 'dragging';
     updateHint('Dragging — move your phone, tap again to drop');
     return;
   }
 
-  // otherwise place a brand-new artifact at the reticle
   if (reticle.visible) {
     const prefab = makePrefab(currentArtifactType);
     if (!prefab) return;
@@ -267,6 +239,7 @@ function onSelect() {
     scene.add(prefab);
     const entry = { mesh: prefab, box3: new THREE.Box3() };
     placedObjects.push(entry);
+    console.log(`✅ Placed ${currentArtifactType}, total: ${placedObjects.length}`);
   }
 }
 
@@ -274,7 +247,7 @@ function pickPlacedObject() {
   if (!reticle.visible || placedObjects.length === 0) return null;
   const p = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
   let closest = null;
-  let closestDist = 0.15; // selection radius in meters
+  let closestDist = 0.15;
   for (const obj of placedObjects) {
     const d = obj.mesh.position.distanceTo(p);
     if (d < closestDist) {
@@ -285,10 +258,6 @@ function pickPlacedObject() {
   return closest;
 }
 
-/* ---------------------------------------------------------
-   Collision detection: recompute bounding boxes every frame
-   and flag any overlapping pair.
---------------------------------------------------------- */
 function updateCollisions() {
   placedObjects.forEach(o => o.box3.setFromObject(o.mesh));
 
@@ -308,11 +277,9 @@ function updateCollisions() {
 function setCollisionVisual(group, colliding) {
   group.traverse(child => {
     if (!child.isMesh || !child.material) return;
-    // Real glTF models can have multiple materials per mesh —
-    // handle both a single material and an array of materials safely.
     const materials = Array.isArray(child.material) ? child.material : [child.material];
     materials.forEach(mat => {
-      if (!mat.color) return; // some materials (e.g. certain shaders) have no .color
+      if (!mat.color) return;
       if (colliding) {
         if (mat.userData._origColor === undefined) {
           mat.userData._origColor = mat.color.getHex();
@@ -361,7 +328,7 @@ function render(timestamp, frame) {
         reticle.visible = true;
         reticle.matrix.fromArray(pose.transform.matrix);
 
-        if (appState === 'dragging' && selectedForDrag) {
+        if (selectedForDrag) {
           selectedForDrag.mesh.position.setFromMatrixPosition(reticle.matrix);
         }
       } else {
