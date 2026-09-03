@@ -98,7 +98,7 @@
     if (reticle) {
       reticle.setAttribute('visible', 'true');
       const scale = 0.9 + 0.1 * Math.sin(Date.now() / 500);
-      reticle.setAttribute('scale', `${scale} ${scale} ${scale}`);
+      reticle.setAttribute('scale', scale + ' ' + scale + ' ' + scale);
     }
   }
   updateReticle();
@@ -115,7 +115,7 @@
     const shape = shapes[placedCount % shapes.length];
     
     const artifact = document.createElement('a-entity');
-    artifact.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
+    artifact.setAttribute('position', pos.x + ' ' + pos.y + ' ' + pos.z);
     artifact.setAttribute('scale', '0.3 0.3 0.3');
     
     if (shape === 'box') {
@@ -126,7 +126,7 @@
       artifact.setAttribute('geometry', 'primitive: cylinder; radius: 0.2; height: 0.4;');
     }
     
-    artifact.setAttribute('material', `color: ${color}; roughness: 0.3; metalness: 0.5;`);
+    artifact.setAttribute('material', 'color: ' + color + '; roughness: 0.3; metalness: 0.5;');
     artifact.setAttribute('class', 'artifact');
     artifact.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear');
     artifact.setAttribute('animation__float', 'property: position; to: 0 0.05 0; loop: true; dur: 1500; dir: alternate; easing: easeInOutQuad');
@@ -134,7 +134,7 @@
     
     artifact.addEventListener('click', function(e) {
       e.stopPropagation();
-      showInfo(`Removed artifact #${this.getAttribute('data-id')}`);
+      showInfo('Removed artifact #' + this.getAttribute('data-id'));
       this.parentNode.removeChild(this);
       placedCount--;
       if (placedCount === 0) {
@@ -144,13 +144,13 @@
     });
     
     container.appendChild(artifact);
-    status.textContent = `✅ ${placedCount} artifact${placedCount > 1 ? 's' : ''} placed`;
+    status.textContent = '✅ ' + placedCount + ' artifact' + (placedCount > 1 ? 's' : '') + ' placed';
     hint.style.display = 'none';
-    showInfo(`Placed artifact #${placedCount} (${shape})`);
+    showInfo('Placed artifact #' + placedCount + ' (' + shape + ')');
     
     if (reticle) {
       reticle.setAttribute('material', 'color: #ff6b6b; opacity: 1;');
-      setTimeout(() => {
+      setTimeout(function() {
         reticle.setAttribute('material', 'color: #c9a13a; opacity: 0.8;');
       }, 300);
     }
@@ -159,7 +159,9 @@
   function showInfo(text) {
     infoPopup.innerHTML = text;
     infoPopup.style.display = 'block';
-    setTimeout(() => { infoPopup.style.display = 'none'; }, 2000);
+    setTimeout(function() {
+      infoPopup.style.display = 'none';
+    }, 2000);
   }
 
   function clearAll() {
