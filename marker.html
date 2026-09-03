@@ -10,84 +10,78 @@
 <script src="https://cdn.jsdelivr.net/npm/ar.js@2.2.4/aframe/build/aframe-ar.min.js"></script>
 
 <style>
-  body{margin:0;overflow:hidden;font-family:'Segoe UI',sans-serif;}
+  *{margin:0;padding:0;}
+  body{overflow:hidden;background:#000;font-family:'Segoe UI',sans-serif;}
+  
   #ui{
     position:fixed;
-    top:0;left:0;right:0;bottom:0;
+    inset:0;
     pointer-events:none;
-    z-index:10;
+    z-index:20;
   }
   #topbar{
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
     display:flex;
     justify-content:space-between;
-    padding:16px 20px;
-    background:linear-gradient(to bottom,rgba(0,0,0,0.5),transparent);
-  }
-  #topbar a{
-    color:white;
-    text-decoration:none;
-    font-weight:600;
-    font-size:14px;
-    background:rgba(0,0,0,0.4);
-    padding:8px 16px;
-    border-radius:20px;
+    padding:16px;
+    background:linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
     pointer-events:auto;
   }
-  #hint{
-    color:white;
-    font-size:12px;
+  #topbar a{
+    color:#fff;
+    text-decoration:none;
+    font-size:14px;
+    font-weight:600;
     background:rgba(0,0,0,0.5);
-    padding:6px 14px;
+    padding:8px 16px;
+    border-radius:20px;
+  }
+  #status{
+    color:#fff;
+    font-size:13px;
+    background:rgba(0,0,0,0.5);
+    padding:8px 16px;
     border-radius:20px;
   }
   #controls{
     position:absolute;
-    bottom:20px;
-    left:0;right:0;
+    bottom:0;
+    left:0;
+    right:0;
     display:flex;
     justify-content:center;
     gap:12px;
+    padding:16px 20px;
+    background:linear-gradient(to top, rgba(0,0,0,0.6), transparent);
     pointer-events:auto;
   }
   button{
     border:none;
     border-radius:30px;
-    padding:10px 18px;
+    padding:10px 20px;
     font-size:13px;
     font-weight:600;
-    background:rgba(0,0,0,0.6);
-    color:white;
+    background:rgba(255,255,255,0.2);
+    color:#fff;
     backdrop-filter:blur(8px);
     cursor:pointer;
-    pointer-events:auto;
+  }
+  button.active{
+    background:#c9a13a;
+    color:#2a2320;
   }
   button:active{transform:scale(0.95);}
-  button.active{background:#c9a13a;color:#2a2320;}
-  #info-text{
-    position:absolute;
-    bottom:80px;
-    left:50%;
-    transform:translateX(-50%);
-    color:white;
-    background:rgba(0,0,0,0.8);
-    padding:12px 20px;
-    border-radius:12px;
-    font-size:14px;
-    display:none;
-    text-align:center;
-    max-width:80%;
-    pointer-events:none;
-    backdrop-filter:blur(8px);
-    border:1px solid rgba(255,255,255,0.1);
-  }
-  #status{
+  #hint{
     position:absolute;
     top:50%;
     left:50%;
     transform:translate(-50%,-50%);
-    color:white;
+    color:#fff;
     background:rgba(0,0,0,0.7);
-    padding:16px 24px;
+    padding:12px 24px;
     border-radius:12px;
     font-size:14px;
     text-align:center;
@@ -102,158 +96,136 @@
 <div id="ui">
   <div id="topbar">
     <a href="index.html">← Home</a>
-    <span id="hint">📷 Point at HIRO marker</span>
+    <span id="status">🎯 Point at HIRO marker</span>
   </div>
-  <div id="info-text">🏛️ Sacred Artifact - Cultural Heritage</div>
-  <div id="status">🔍 Searching for marker...</div>
+  <div id="hint">🔍 Place the HIRO marker in view</div>
   <div id="controls">
-    <button id="infoBtn" onclick="toggleInfo()">ℹ️ Info</button>
-    <button id="rotateBtn" class="active" onclick="toggleRotation()">🔄 Rotate</button>
-    <button id="resetBtn" onclick="resetScene()">↺ Reset</button>
+    <button id="infoBtn" onclick="toggleInfo()">ℹ️ Show Info</button>
+    <button id="spinBtn" class="active" onclick="toggleSpin()">🔄 Auto-Rotate</button>
   </div>
 </div>
 
 <a-scene
   embedded
-  vr-mode-ui="enabled:false"
-  arjs="sourceType:webcam; debugUIEnabled:false; detectionMode:mono; matrixCodeType:3x3;"
+  vr-mode-ui="enabled: false"
+  arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono; matrixCodeType: 3x3;"
 >
 
+  <!-- Load models from CDN -->
+  <a-assets>
+    <!-- Using a publicly available GLTF model (Statue of Liberty as artifact) -->
+    <a-asset-item id="artifact-model" src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/models/gltf/DamagedHelmet/glTF/DamagedHelmet.gltf"></a-asset-item>
+  </a-assets>
+
+  <!-- HIRO Marker -->
   <a-marker preset="hiro" id="hiroMarker">
     
-    <!-- Main Artifact - Golden Torus Knot -->
-    <a-entity id="artifact" position="0 0.2 0">
-      <a-torus-knot
-        radius="0.12"
-        tube="0.035"
-        p="2"
-        q="3"
-        material="color:#c9a13a; metalness:0.7; roughness:0.2;"
-        animation="property:rotation; to:0 360 0; loop:true; dur:10000; easing:linear"
-      >
-        <a-animation attribute="scale" to="1.1 1.1 1.1" dur="2000" easing="ease-in-out" repeat="indefinite" direction="alternate"></a-animation>
-      </a-torus-knot>
-      
-      <!-- Inner glow sphere -->
-      <a-sphere
-        radius="0.05"
-        material="color:#ffd700; emissive:#ffd700; emissiveIntensity:0.8; transparent:true; opacity:0.4;"
-        position="0 0 0"
-      ></a-sphere>
-      
-      <!-- Orbiting particles -->
-      <a-entity position="0.2 0 0">
-        <a-sphere radius="0.015" material="color:#ffd700" 
-          animation="property:position; to:-0.2 0 0; loop:true; dur:3000; easing:linear"></a-sphere>
-      </a-entity>
-      <a-entity position="0 0 0.2">
-        <a-sphere radius="0.015" material="color:#ffaa00"
-          animation="property:position; to:0 0 -0.2; loop:true; dur:3000; easing:linear"></a-sphere>
-      </a-entity>
+    <!-- Main artifact -->
+    <a-entity 
+      id="artifact"
+      gltf-model="#artifact-model"
+      position="0 0.3 0"
+      scale="0.5 0.5 0.5"
+      rotation="0 0 0"
+    >
+      <!-- Floating animation -->
+      <a-animation
+        attribute="position"
+        to="0 0.45 0"
+        dur="1500"
+        direction="alternate"
+        repeat="indefinite"
+        easing="easeInOutQuad"
+      ></a-animation>
     </a-entity>
 
-    <!-- Second Artifact - Pedestal with object -->
-    <a-entity position="-0.3 0 0.15">
-      <a-cylinder
-        radius="0.05"
-        height="0.03"
-        material="color:#6e1f2a; metalness:0.4; roughness:0.5;"
-        position="0 0.015 0"
-      ></a-cylinder>
-      <a-cylinder
-        radius="0.02"
-        height="0.1"
-        material="color:#c9a13a; metalness:0.6; roughness:0.3;"
-        position="0 0.065 0"
-      ></a-cylinder>
-      <a-sphere
-        radius="0.04"
-        material="color:#f4ecdc; metalness:0.2; roughness:0.3;"
-        position="0 0.13 0"
-        animation="property:scale; to:1.1 1.1 1.1; dur:2000; loop:true; direction:alternate; easing:ease-in-out"
-      ></a-sphere>
-    </a-entity>
+    <!-- Info text (initially hidden) -->
+    <a-text 
+      id="infoText"
+      value="🏛️ Ancient Artifact · Circa 5th Century · Cultural Heritage"
+      color="#f4ecdc"
+      align="center"
+      width="3"
+      position="0 -0.3 0"
+      visible="false"
+      background="true"
+      background-color="rgba(0,0,0,0.7)"
+      border-radius="0.1"
+      padding="0.2 0.3"
+    ></a-text>
 
     <!-- Lighting -->
-    <a-light type="point" intensity="1.2" color="#ffe6b0" position="0 0.5 0.5"></a-light>
-    <a-light type="ambient" intensity="0.6" color="#ffffff"></a-light>
-    <a-light type="directional" intensity="0.8" color="#ffffff" position="1 1 -1"></a-light>
+    <a-light type="point" intensity="1.0" position="0 0.8 0.5" color="#ffd966"></a-light>
+    <a-light type="ambient" intensity="0.6"></a-light>
+    
+    <!-- Decorative ring -->
+    <a-ring 
+      radius-inner="0.4"
+      radius-outer="0.45"
+      material="color: #c9a13a; transparent: true; opacity: 0.3; side: double"
+      position="0 0 0"
+      rotation="-90 0 0"
+    ></a-ring>
+
   </a-marker>
 
   <a-entity camera></a-entity>
 </a-scene>
 
 <script>
-let infoVisible = false;
-let rotateOn = true;
-let markerFound = false;
+  const marker = document.querySelector('#hiroMarker');
+  const hint = document.querySelector('#hint');
+  const infoText = document.querySelector('#infoText');
+  const infoBtn = document.querySelector('#infoBtn');
+  let infoVisible = false;
+  let spinning = true;
+  let markerFound = false;
 
-document.addEventListener('DOMContentLoaded', function() {
-  const status = document.getElementById('status');
-  status.style.display = 'block';
-  
-  setTimeout(() => {
-    if (!markerFound) {
-      status.textContent = '⚠️ Make sure the HIRO marker is in view';
-      status.style.display = 'block';
-    }
-  }, 5000);
-});
-
-const marker = document.querySelector('#hiroMarker');
-if (marker) {
-  marker.addEventListener('markerFound', function() {
+  // Marker detection events
+  marker.addEventListener('markerFound', () => {
     markerFound = true;
-    const status = document.getElementById('status');
-    status.style.display = 'none';
-    document.getElementById('hint').textContent = '✅ Marker detected!';
-    document.getElementById('hint').style.background = 'rgba(46, 125, 50, 0.8)';
+    hint.style.display = 'none';
+    document.getElementById('status').textContent = '✅ Artifact detected!';
   });
-  
-  marker.addEventListener('markerLost', function() {
+
+  marker.addEventListener('markerLost', () => {
     markerFound = false;
-    document.getElementById('hint').textContent = '📷 Point at HIRO marker';
-    document.getElementById('hint').style.background = 'rgba(0,0,0,0.5)';
+    document.getElementById('status').textContent = '🎯 Point at HIRO marker';
+    // Show hint after 3 seconds of not finding marker
+    setTimeout(() => {
+      if (!markerFound) hint.style.display = 'block';
+    }, 3000);
   });
-}
 
-function toggleInfo() {
-  infoVisible = !infoVisible;
-  const infoText = document.getElementById('info-text');
-  infoText.style.display = infoVisible ? 'block' : 'none';
-  document.getElementById('infoBtn').classList.toggle('active', infoVisible);
-  
-  if (infoVisible) {
-    const visitors = Math.floor(1200 + Math.random() * 800);
-    infoText.innerHTML = `🏛️ Sacred Artifact · <br>👥 ${visitors} visitors today · 📍 Heritage Site #42`;
+  // Initial hint
+  setTimeout(() => {
+    if (!markerFound) hint.style.display = 'block';
+  }, 2000);
+
+  // Toggle info text
+  function toggleInfo() {
+    infoVisible = !infoVisible;
+    infoText.setAttribute('visible', infoVisible);
+    infoBtn.classList.toggle('active', infoVisible);
   }
-}
 
-function toggleRotation() {
-  rotateOn = !rotateOn;
-  const artifact = document.querySelector('#artifact');
-  if (artifact) {
-    if (rotateOn) {
-      artifact.setAttribute('animation', 'property:rotation; to:0 360 0; loop:true; dur:10000; easing:linear');
-      document.getElementById('rotateBtn').classList.add('active');
+  // Toggle auto-rotation
+  function toggleSpin() {
+    spinning = !spinning;
+    const artifact = document.querySelector('#artifact');
+    const btn = document.querySelector('#spinBtn');
+    btn.classList.toggle('active', spinning);
+    
+    if (spinning) {
+      artifact.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear');
     } else {
       artifact.removeAttribute('animation');
-      document.getElementById('rotateBtn').classList.remove('active');
     }
   }
-}
 
-function resetScene() {
-  rotateOn = true;
-  const artifact = document.querySelector('#artifact');
-  if (artifact) {
-    artifact.setAttribute('animation', 'property:rotation; to:0 360 0; loop:true; dur:10000; easing:linear');
-    document.getElementById('rotateBtn').classList.add('active');
-  }
-  infoVisible = false;
-  document.getElementById('info-text').style.display = 'none';
-  document.getElementById('infoBtn').classList.remove('active');
-}
+  // Expose functions to global scope
+  window.toggleInfo = toggleInfo;
+  window.toggleSpin = toggleSpin;
 </script>
 </body>
 </html>
