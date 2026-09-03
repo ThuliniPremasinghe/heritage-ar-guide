@@ -59,7 +59,9 @@
     color:white;
     backdrop-filter:blur(8px);
     cursor:pointer;
+    pointer-events:auto;
   }
+  button:active{transform:scale(0.95);}
   button.active{background:#c9a13a;color:#2a2320;}
   #info-text{
     position:absolute;
@@ -67,12 +69,30 @@
     left:50%;
     transform:translateX(-50%);
     color:white;
-    background:rgba(0,0,0,0.7);
-    padding:10px 20px;
+    background:rgba(0,0,0,0.8);
+    padding:12px 20px;
     border-radius:12px;
     font-size:14px;
     display:none;
     text-align:center;
+    max-width:80%;
+    pointer-events:none;
+    backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,0.1);
+  }
+  #status{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    color:white;
+    background:rgba(0,0,0,0.7);
+    padding:16px 24px;
+    border-radius:12px;
+    font-size:14px;
+    text-align:center;
+    display:none;
+    pointer-events:none;
     max-width:80%;
   }
 </style>
@@ -84,80 +104,137 @@
     <a href="index.html">← Home</a>
     <span id="hint">📷 Point at HIRO marker</span>
   </div>
-  <div id="info-text">🏛️ Kandyan Mask - 19th Century Replica</div>
+  <div id="info-text">🏛️ Sacred Artifact - Cultural Heritage</div>
+  <div id="status">🔍 Searching for marker...</div>
   <div id="controls">
     <button id="infoBtn" onclick="toggleInfo()">ℹ️ Info</button>
-    <button id="rotateBtn" onclick="toggleRotation()">🔄 Auto-Rotate</button>
+    <button id="rotateBtn" class="active" onclick="toggleRotation()">🔄 Rotate</button>
+    <button id="resetBtn" onclick="resetScene()">↺ Reset</button>
   </div>
 </div>
 
 <a-scene
   embedded
   vr-mode-ui="enabled:false"
-  arjs="sourceType:webcam; debugUIEnabled:false; detectionMode:mono_and_matrix; matrixCodeType:3x3;"
+  arjs="sourceType:webcam; debugUIEnabled:false; detectionMode:mono; matrixCodeType:3x3;"
 >
 
-  <!-- Use public models -->
-  <a-assets>
-    <!-- Using A-Frame's built-in geometry as fallback since GLB might not load -->
-  </a-assets>
-
   <a-marker preset="hiro" id="hiroMarker">
-    <!-- Main Artifact - Using a torus knot with nice material -->
-    <a-entity id="artifact" position="0 0.3 0">
+    
+    <!-- Main Artifact - Golden Torus Knot -->
+    <a-entity id="artifact" position="0 0.2 0">
       <a-torus-knot
-        radius="0.15"
-        tube="0.04"
+        radius="0.12"
+        tube="0.035"
         p="2"
         q="3"
-        material="color:#c9a13a; metalness:0.6; roughness:0.3;"
+        material="color:#c9a13a; metalness:0.7; roughness:0.2;"
         animation="property:rotation; to:0 360 0; loop:true; dur:10000; easing:linear"
-      ></a-torus-knot>
-      <!-- Inner glow -->
+      >
+        <a-animation attribute="scale" to="1.1 1.1 1.1" dur="2000" easing="ease-in-out" repeat="indefinite" direction="alternate"></a-animation>
+      </a-torus-knot>
+      
+      <!-- Inner glow sphere -->
       <a-sphere
-        radius="0.06"
-        material="color:#ffd700; emissive:#ffd700; emissiveIntensity:0.5; transparent:true; opacity:0.6;"
+        radius="0.05"
+        material="color:#ffd700; emissive:#ffd700; emissiveIntensity:0.8; transparent:true; opacity:0.4;"
         position="0 0 0"
       ></a-sphere>
+      
+      <!-- Orbiting particles (simple spheres) -->
+      <a-entity position="0.2 0 0">
+        <a-sphere radius="0.015" material="color:#ffd700" 
+          animation="property:position; to:-0.2 0 0; loop:true; dur:3000; easing:linear"></a-sphere>
+      </a-entity>
+      <a-entity position="0 0 0.2">
+        <a-sphere radius="0.015" material="color:#ffaa00"
+          animation="property:position; to:0 0 -0.2; loop:true; dur:3000; easing:linear"></a-sphere>
+      </a-entity>
     </a-entity>
 
-    <!-- Second Artifact - Small statue -->
-    <a-entity position="-0.3 0.15 0.1">
+    <!-- Second Artifact - Small pedestal with object -->
+    <a-entity position="-0.3 0 0.15">
+      <!-- Base -->
       <a-cylinder
-        radius="0.04"
-        height="0.08"
-        material="color:#6e1f2a; metalness:0.3;"
-        position="0 0.04 0"
+        radius="0.05"
+        height="0.03"
+        material="color:#6e1f2a; metalness:0.4; roughness:0.5;"
+        position="0 0.015 0"
       ></a-cylinder>
+      <!-- Column -->
+      <a-cylinder
+        radius="0.02"
+        height="0.1"
+        material="color:#c9a13a; metalness:0.6; roughness:0.3;"
+        position="0 0.065 0"
+      ></a-cylinder>
+      <!-- Top sphere -->
       <a-sphere
         radius="0.04"
-        material="color:#f4ecdc;"
-        position="0 0.12 0"
+        material="color:#f4ecdc; metalness:0.2; roughness:0.3;"
+        position="0 0.13 0"
+        animation="property:scale; to:1.1 1.1 1.1; dur:2000; loop:true; direction:alternate; easing:ease-in-out"
       ></a-sphere>
-    </a-entity>
-
-    <!-- Decorative particles -->
-    <a-entity position="0 0.5 0">
-      <a-entity particle-system="preset:snow; color:#ffd700; particleCount:30; size:0.02; speed:0.3;"></a-entity>
     </a-entity>
 
     <!-- Lighting -->
-    <a-light type="point" intensity="1" color="#ffe6b0" position="0 0.6 0.5"></a-light>
-    <a-light type="ambient" intensity="0.5"></a-light>
+    <a-light type="point" intensity="1.2" color="#ffe6b0" position="0 0.5 0.5"></a-light>
+    <a-light type="ambient" intensity="0.6" color="#ffffff"></a-light>
+    <a-light type="directional" intensity="0.8" color="#ffffff" position="1 1 -1"></a-light>
   </a-marker>
 
+  <!-- Fallback camera -->
   <a-entity camera></a-entity>
 </a-scene>
 
 <script>
 let infoVisible = false;
 let rotateOn = true;
+let markerFound = false;
+
+// Wait for scene to load
+document.addEventListener('DOMContentLoaded', function() {
+  const status = document.getElementById('status');
+  status.style.display = 'block';
+  
+  // Hide status after 5 seconds if marker found
+  setTimeout(() => {
+    if (!markerFound) {
+      status.textContent = '⚠️ Make sure the HIRO marker is in view';
+      status.style.display = 'block';
+    }
+  }, 5000);
+});
+
+// Marker events
+const marker = document.querySelector('#hiroMarker');
+if (marker) {
+  marker.addEventListener('markerFound', function() {
+    markerFound = true;
+    const status = document.getElementById('status');
+    status.style.display = 'none';
+    document.getElementById('hint').textContent = '✅ Marker detected!';
+    document.getElementById('hint').style.background = 'rgba(46, 125, 50, 0.8)';
+  });
+  
+  marker.addEventListener('markerLost', function() {
+    markerFound = false;
+    document.getElementById('hint').textContent = '📷 Point at HIRO marker';
+    document.getElementById('hint').style.background = 'rgba(0,0,0,0.5)';
+  });
+}
 
 function toggleInfo() {
   infoVisible = !infoVisible;
   const infoText = document.getElementById('info-text');
   infoText.style.display = infoVisible ? 'block' : 'none';
   document.getElementById('infoBtn').classList.toggle('active', infoVisible);
+  
+  if (infoVisible) {
+    // Update info text with some "live data" simulation
+    const visitors = Math.floor(1200 + Math.random() * 800);
+    infoText.innerHTML = `🏛️ Sacred Artifact · <br>👥 ${visitors} visitors today · 📍 Heritage Site #42`;
+  }
 }
 
 function toggleRotation() {
@@ -166,18 +243,36 @@ function toggleRotation() {
   if (artifact) {
     if (rotateOn) {
       artifact.setAttribute('animation', 'property:rotation; to:0 360 0; loop:true; dur:10000; easing:linear');
+      document.getElementById('rotateBtn').classList.add('active');
     } else {
       artifact.removeAttribute('animation');
+      document.getElementById('rotateBtn').classList.remove('active');
     }
   }
-  document.getElementById('rotateBtn').classList.toggle('active', rotateOn);
 }
 
-// Show hint if marker not found
-setTimeout(() => {
-  const hint = document.getElementById('hint');
-  if (hint) hint.textContent = '🔍 Move camera to find the HIRO marker';
-}, 5000);
+function resetScene() {
+  // Reset rotation
+  rotateOn = true;
+  const artifact = document.querySelector('#artifact');
+  if (artifact) {
+    artifact.setAttribute('animation', 'property:rotation; to:0 360 0; loop:true; dur:10000; easing:linear');
+    document.getElementById('rotateBtn').classList.add('active');
+  }
+  
+  // Hide info
+  infoVisible = false;
+  document.getElementById('info-text').style.display = 'none';
+  document.getElementById('infoBtn').classList.remove('active');
+}
+
+// Handle errors
+window.addEventListener('error', function(e) {
+  console.log('Error:', e.message);
+});
+
+// Show that camera is loading
+console.log('Marker-based AR loaded. Looking for HIRO marker...');
 </script>
 </body>
 </html>
