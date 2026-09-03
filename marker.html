@@ -66,18 +66,34 @@
 </div>
 
 <a-scene embedded vr-mode-ui="enabled: false" arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono; matrixCodeType: 3x3;">
-  <a-assets>
-    <a-asset-item id="artifact-model" src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/models/gltf/DamagedHelmet/glTF/DamagedHelmet.gltf"></a-asset-item>
-  </a-assets>
-
   <a-marker preset="hiro" id="hiroMarker">
-    <a-entity id="artifact" gltf-model="#artifact-model" position="0 0.3 0" scale="0.5 0.5 0.5" rotation="0 0 0">
-      <a-animation attribute="position" to="0 0.45 0" dur="1500" direction="alternate" repeat="indefinite" easing="easeInOutQuad"></a-animation>
+    <!-- Temple Model from CDN -->
+    <a-entity 
+      gltf-model="https://cdn.jsdelivr.net/gh/aframe-models/aframe-models@latest/gltf/archaeological-temple/temple.gltf"
+      position="0 0 0"
+      scale="0.3 0.3 0.3"
+      rotation="-90 0 0"
+      animation="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear"
+    >
+      <a-light type="point" color="#ffaa55" intensity="0.8" position="0 1 0"></a-light>
     </a-entity>
-    <a-text id="infoText" value="🏛️ Ancient Artifact · Circa 5th Century · Cultural Heritage" color="#f4ecdc" align="center" width="3" position="0 -0.3 0" visible="false" background="true" background-color="rgba(0,0,0,0.7)" border-radius="0.1" padding="0.2 0.3"></a-text>
-    <a-light type="point" intensity="1.0" position="0 0.8 0.5" color="#ffd966"></a-light>
+    
+    <!-- Info Text -->
+    <a-text 
+      id="infoText"
+      value="🏛️ Ancient Temple · UNESCO Heritage Site · 5th Century"
+      color="#f4ecdc"
+      align="center"
+      width="3"
+      position="0 -0.4 0"
+      visible="false"
+      background="true"
+      background-color="rgba(0,0,0,0.7)"
+      border-radius="0.1"
+      padding="0.2 0.3"
+    ></a-text>
+
     <a-light type="ambient" intensity="0.6"></a-light>
-    <a-ring radius-inner="0.4" radius-outer="0.45" material="color: #c9a13a; transparent: true; opacity: 0.3; side: double" position="0 0 0" rotation="-90 0 0"></a-ring>
   </a-marker>
   <a-entity camera></a-entity>
 </a-scene>
@@ -117,11 +133,11 @@
 
   function toggleSpin() {
     spinning = !spinning;
-    const artifact = document.querySelector('#artifact');
+    const artifact = document.querySelector('a-marker a-entity');
     const btn = document.querySelector('#spinBtn');
     btn.classList.toggle('active', spinning);
     if (spinning) {
-      artifact.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear');
+      artifact.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear');
     } else {
       artifact.removeAttribute('animation');
     }
