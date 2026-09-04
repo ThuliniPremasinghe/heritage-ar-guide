@@ -6,7 +6,7 @@
 <title>Heritage AR Guide — Markerless Mode</title>
 <style>
   :root{ --maroon:#6e1f2a; --gold:#c9a13a; --cream:#f4ecdc; }
-  html,body{ margin:0; padding:0; height:100%; overflow:hidden; font-family:'Inter',sans-serif; background:#000; }
+  html,body{ margin:0; padding:0; height:100%; overflow:hidden; font-family:'Inter',sans-serif; background:#111; }
   canvas{ display:block; }
 
   #ui{ position:fixed; inset:0; pointer-events:none; z-index:20; }
@@ -14,7 +14,7 @@
     position:absolute; top:0; left:0; right:0;
     display:flex; align-items:center; justify-content:space-between;
     padding: max(14px, env(safe-area-inset-top)) 16px 14px;
-    background:linear-gradient(to bottom, rgba(0,0,0,0.65), transparent);
+    background:linear-gradient(to bottom, rgba(0,0,0,0.75), transparent);
     pointer-events:auto;
   }
   #topbar a{
@@ -24,7 +24,7 @@
   #hint{
     position:absolute; top:65px; left:50%; transform:translateX(-50%);
     color:#fff; font-size:12px; font-weight:500; text-align:center;
-    background:rgba(0,0,0,0.55); padding:8px 16px; border-radius:20px;
+    background:rgba(0,0,0,0.65); padding:8px 16px; border-radius:20px;
     pointer-events:none; max-width:85%;
   }
   #controls{
@@ -48,9 +48,13 @@
 
   #not-supported{
     position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-    background:var(--cream); color:#2a2320; text-align:center; padding:32px; z-index:50;
+    background:rgba(20, 10, 8, 0.92); color:var(--cream); text-align:center; padding:32px; z-index:50;
   }
   #not-supported.show{ display:flex; }
+  #not-supported button {
+    margin-top: 16px; padding: 10px 20px; border-radius: 20px; border: none;
+    background: var(--gold); color: #000; font-weight: 600; cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -59,7 +63,7 @@
   <div id="topbar">
     <a href="index.html">&larr; Home</a>
   </div>
-  <div id="hint">Point camera at a flat surface and move it slowly</div>
+  <div id="hint">Initializing AR Session...</div>
 
   <div id="controls">
     <div class="row">
@@ -77,9 +81,11 @@
 <div id="not-supported">
   <div>
     <h2>WebXR AR Not Supported</h2>
-    <p style="max-width:40ch; margin:12px auto;">
-      Markerless hit-testing requires Google Chrome on an ARCore-compatible Android device.
+    <p style="max-width:40ch; margin:12px auto; line-height: 1.5;">
+      WebXR hit-testing requires Google Chrome on an ARCore-compatible Android device.
+      You are currently viewing on an unsupported browser or platform (e.g., iOS Safari).
     </p>
+    <button onclick="dismissNotSupported()">Continue in 3D Preview Mode</button>
   </div>
 </div>
 
@@ -105,6 +111,7 @@ let controller;
 let reticle;
 let hitTestSource = null;
 let hitTestSourceRequested = false;
+let isARSupported = false;
 
 const placedObjects = [];
 const loader = new GLTFLoader();
@@ -112,9 +119,10 @@ const modelCache = {};
 
 init();
 
-function init() {
+async function init() {
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+  camera.position.set(0, 1.2, 2.5);
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -130,16 +138,26 @@ function init() {
   dirLight.position.set(0.5, 2, 0.5);
   scene.add(dirLight);
 
-  // WebXR AR Button Initialization
-  const arButton = ARButton.createButton(renderer, {
-    requiredFeatures: ['hit-test'],
-    optionalFeatures: ['dom-overlay'],
-    domOverlay: { root: document.getElementById('ui') }
-  });
-  document.getElementById('ar-button-holder').appendChild(arButton);
+  // Check explicit WebXR Immersive AR Support
+  if ('xr' in navigator) {
+    try {
+      isARSupported = await navigator.xr.isSessionSupported('immersive-ar');
+    } catch (e) {
+      isARSupported = false;
+    }
+  }
 
-  if (!('xr' in navigator)) {
+  if (isARSupported) {
+    const arButton = ARButton.createButton(renderer, {
+      requiredFeatures: ['hit-test'],
+      optionalFeatures: ['dom-overlay'],
+      domOverlay: { root: document.getElementById('ui') }
+    });
+    document.getElementById('ar-button-holder').appendChild(arButton);
+    updateHint('Tap "START AR" below to begin surface detection');
+  } else {
     document.getElementById('not-supported').classList.add('show');
+    updateHint('3D Preview Mode (WebXR AR unavailable on this browser)');
   }
 
   // Hit-Test Placement Reticle
@@ -150,6 +168,7 @@ function init() {
   reticle.visible = false;
   scene.add(reticle);
 
+  // WebXR Controller Event
   controller = renderer.xr.getController(0);
   controller.addEventListener('select', onSelect);
   scene.add(controller);
@@ -157,7 +176,7 @@ function init() {
   window.addEventListener('resize', onWindowResize);
   renderer.setAnimationLoop(render);
 
-  // Preload GLTF Models
+  // Preload Models
   preloadModel('vase', 'assets/models/vase.glb');
   preloadModel('room', 'assets/models/the_porcelain_room.glb');
 }
@@ -177,13 +196,12 @@ function preloadModel(key, path) {
 function makePrefab(type) {
   const source = modelCache[type];
   if (!source) {
-    updateHint(`⏳ ${type.toUpperCase()} model is still loading...`);
+    updateHint(`⏳ ${type.toUpperCase()} model loading...`);
     return null;
   }
   const group = source.clone(true);
   group.userData.type = type;
 
-  // Normalized scaling based on your assets
   if (type === 'vase') {
     group.scale.set(0.2, 0.2, 0.2);
   } else if (type === 'room') {
@@ -202,20 +220,24 @@ window.resetPlacedObjects = function () {
   placedObjects.forEach(o => scene.remove(o.mesh));
   placedObjects.length = 0;
   selectedForDrag = null;
-  updateHint('Exhibit reset. Tap to place a new artifact');
+  updateHint('Exhibit reset. Tap to place an artifact');
+};
+
+window.dismissNotSupported = function () {
+  document.getElementById('not-supported').classList.remove('show');
 };
 
 function onSelect() {
   if (selectedForDrag) {
     selectedForDrag = null;
-    updateHint('Object dropped. Tap to place or select another');
+    updateHint('Object dropped. Tap to place or move another');
     return;
   }
 
   const hit = pickPlacedObject();
   if (hit) {
     selectedForDrag = hit;
-    updateHint('Dragging object... Move phone and tap to drop');
+    updateHint('Dragging object... Move phone and tap to release');
     return;
   }
 
@@ -274,7 +296,7 @@ function setCollisionVisual(group, colliding) {
         if (mat.userData._origColor === undefined && mat.color) {
           mat.userData._origColor = mat.color.getHex();
         }
-        if (mat.color) mat.color.setHex(0xd93c3c); // Red tint on collision
+        if (mat.color) mat.color.setHex(0xd93c3c);
       } else if (mat.userData._origColor !== undefined && mat.color) {
         mat.color.setHex(mat.userData._origColor);
       }
