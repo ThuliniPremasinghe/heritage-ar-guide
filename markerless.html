@@ -94,6 +94,7 @@
 <model-viewer 
   id="viewer"
   src="assets/models/vase.glb"
+  ios-src="assets/models/vase.usdz"
   alt="Heritage Vase"
   ar
   ar-modes="quick-look scene-viewer webxr"
@@ -107,13 +108,12 @@
   const models = {
     vase: {
       glb: 'assets/models/vase.glb',
-      // If you upload a valid USDZ file to GitHub, uncomment the line below:
       usdz: 'assets/models/vase.usdz',
       name: 'Vase'
     },
     room: {
       glb: 'assets/models/the_porcelain_room.glb',
-      // If you upload a valid USDZ file to GitHub, uncomment the line below:
+      // Uncomment the line below once you convert and add the room USDZ file:
       // usdz: 'assets/models/the_porcelain_room.usdz',
       name: 'Porcelain Room'
     }
@@ -121,6 +121,11 @@
 
   let currentType = 'vase';
   const viewer = document.getElementById('viewer');
+
+  // Set initial ios-src attribute on page load
+  if (models[currentType].usdz) {
+    viewer.setAttribute('ios-src', models[currentType].usdz);
+  }
 
   function switchArtifact(type) {
     currentType = type;
