@@ -5,19 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
 <title>Heritage AR Guide — Markerless Mode</title>
 
-<!-- Google Model Viewer Library for Cross-Platform WebAR (iOS & Android) -->
+<!-- Google Model Viewer Library -->
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
 
 <style>
   :root { --maroon:#6e1f2a; --gold:#c9a13a; --cream:#f4ecdc; }
   html, body { margin:0; padding:0; height:100%; width:100%; overflow:hidden; font-family:'Inter',sans-serif; background:#111; }
 
-  /* Model Viewer covers full viewport */
   model-viewer {
     width: 100vw;
     height: 100vh;
     background-color: #111;
-    --postfix: "px";
   }
 
   #ui { position:fixed; inset:0; pointer-events:none; z-index:20; }
@@ -56,7 +54,6 @@
   }
   button.pill.active { background:var(--gold); color:#2a2320; }
 
-  /* Custom Launch AR Button */
   #ar-launch-btn {
     position: fixed;
     top: 50%;
@@ -82,7 +79,7 @@
   <div id="topbar">
     <a href="index.html">&larr; Home</a>
   </div>
-  <div id="hint">Select an artifact and tap "START AR"</div>
+  <div id="hint">Loaded Vase. Tap START AR</div>
 
   <div id="controls">
     <div class="row">
@@ -94,13 +91,12 @@
 
 <button id="ar-launch-btn" onclick="triggerAR()">START AR</button>
 
-<!-- Set Vase as the Default Active Model -->
 <model-viewer 
   id="viewer"
   src="assets/models/vase.glb"
   alt="Heritage Vase"
   ar
-  ar-modes="scene-viewer quick-look webxr"
+  ar-modes="quick-look scene-viewer webxr"
   camera-controls
   auto-rotate
   shadow-intensity="1"
@@ -111,10 +107,14 @@
   const models = {
     vase: {
       glb: 'assets/models/vase.glb',
+      // If you upload a valid USDZ file to GitHub, uncomment the line below:
+      // usdz: 'assets/models/vase.usdz',
       name: 'Vase'
     },
     room: {
       glb: 'assets/models/the_porcelain_room.glb',
+      // If you upload a valid USDZ file to GitHub, uncomment the line below:
+      // usdz: 'assets/models/the_porcelain_room.usdz',
       name: 'Porcelain Room'
     }
   };
@@ -129,7 +129,6 @@
 
     viewer.src = models[type].glb;
     
-    // Only attach usdz if file exists on server
     if (models[type].usdz) {
       viewer.setAttribute('ios-src', models[type].usdz);
     } else {
@@ -147,6 +146,7 @@
     }
   }
 
+  // Automatically hide "START AR" button when AR mode is active
   viewer.addEventListener('ar-status', (event) => {
     const launchBtn = document.getElementById('ar-launch-btn');
     if (event.detail.status === 'session-started') {
