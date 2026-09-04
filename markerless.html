@@ -14,18 +14,18 @@
     position:absolute; top:0; left:0; right:0;
     display:flex; align-items:center; justify-content:space-between;
     padding: max(14px, env(safe-area-inset-top)) 16px 14px;
-    background:linear-gradient(to bottom, rgba(20,10,8,0.55), transparent);
+    background:linear-gradient(to bottom, rgba(0,0,0,0.65), transparent);
     pointer-events:auto;
   }
   #topbar a{
     color:#fff; text-decoration:none; font-size:13px; font-weight:600;
-    background:rgba(0,0,0,0.35); padding:8px 12px; border-radius:20px;
+    background:rgba(0,0,0,0.45); padding:8px 14px; border-radius:20px;
   }
   #hint{
-    position:absolute; top:60px; left:50%; transform:translateX(-50%);
+    position:absolute; top:65px; left:50%; transform:translateX(-50%);
     color:#fff; font-size:12px; font-weight:500; text-align:center;
-    background:rgba(0,0,0,0.45); padding:8px 14px; border-radius:20px;
-    pointer-events:none; max-width:80%;
+    background:rgba(0,0,0,0.55); padding:8px 16px; border-radius:20px;
+    pointer-events:none; max-width:85%;
   }
   #controls{
     position:absolute; bottom:0; left:0; right:0;
@@ -36,20 +36,14 @@
   .row{ display:flex; gap:10px; flex-wrap: wrap; justify-content: center; }
   button.pill{
     border:none; border-radius:999px; padding:12px 18px;
-    background:rgba(0,0,0,0.55); color:#fff; font-size:13px; font-weight:600;
+    background:rgba(0,0,0,0.65); color:#fff; font-size:13px; font-weight:600;
     backdrop-filter: blur(6px); cursor: pointer;
   }
   button.pill.active{ background:var(--gold); color:#2a2320; }
-  button.pill:active{ filter:brightness(0.85); }
 
   #ar-button-holder{
-    position:fixed; bottom:96px; left:50%; transform:translateX(-50%);
+    position:fixed; bottom:110px; left:50%; transform:translateX(-50%);
     z-index:30; pointer-events:auto;
-  }
-  #ar-button-holder button{
-    padding:14px 28px; border-radius:999px; border:none;
-    background:var(--maroon); color:#fff; font-weight:700; font-size:14px;
-    cursor: pointer;
   }
 
   #not-supported{
@@ -65,7 +59,7 @@
   <div id="topbar">
     <a href="index.html">&larr; Home</a>
   </div>
-  <div id="hint">Move your phone to find a flat surface, then tap to place</div>
+  <div id="hint">Point camera at a flat surface and move it slowly</div>
 
   <div id="controls">
     <div class="row">
@@ -73,7 +67,7 @@
       <button class="pill" id="selectRoom" onclick="selectArtifact('room')">🏛️ Place: Porcelain Room</button>
     </div>
     <div class="row">
-      <button class="pill" onclick="resetPlacedObjects()">↺ Reset exhibit</button>
+      <button class="pill" onclick="resetPlacedObjects()">↺ Reset Exhibit</button>
     </div>
   </div>
 </div>
@@ -82,10 +76,9 @@
 
 <div id="not-supported">
   <div>
-    <h2 style="font-family:serif;">WebXR AR not available</h2>
-    <p style="max-width:40ch;margin:0 auto;">
-      This device or browser doesn't support the WebXR Device API with
-      hit-testing. Try the latest Chrome on an ARCore-capable Android phone.
+    <h2>WebXR AR Not Supported</h2>
+    <p style="max-width:40ch; margin:12px auto;">
+      Markerless hit-testing requires Google Chrome on an ARCore-compatible Android device.
     </p>
   </div>
 </div>
@@ -121,7 +114,6 @@ init();
 
 function init() {
   scene = new THREE.Scene();
-
   camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -130,17 +122,15 @@ function init() {
   renderer.xr.enabled = true;
   document.body.appendChild(renderer.domElement);
 
-  // Lighting
-  const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1.1);
-  scene.add(hemi);
-  const dir = new THREE.DirectionalLight(0xffe6b0, 0.8);
-  dir.position.set(0.5, 1, 0.25);
-  scene.add(dir);
-  const dir2 = new THREE.DirectionalLight(0xffffff, 0.4);
-  dir2.position.set(-0.5, 0.5, -0.25);
-  scene.add(dir2);
+  // Lighting Setup
+  const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+  scene.add(ambientLight);
 
-  // AR Button
+  const dirLight = new THREE.DirectionalLight(0xffe6b0, 1.0);
+  dirLight.position.set(0.5, 2, 0.5);
+  scene.add(dirLight);
+
+  // WebXR AR Button Initialization
   const arButton = ARButton.createButton(renderer, {
     requiredFeatures: ['hit-test'],
     optionalFeatures: ['dom-overlay'],
@@ -152,7 +142,7 @@ function init() {
     document.getElementById('not-supported').classList.add('show');
   }
 
-  // Reticle
+  // Hit-Test Placement Reticle
   const reticleGeo = new THREE.RingGeometry(0.06, 0.08, 32).rotateX(-Math.PI / 2);
   const reticleMat = new THREE.MeshBasicMaterial({ color: 0xc9a13a });
   reticle = new THREE.Mesh(reticleGeo, reticleMat);
@@ -165,10 +155,9 @@ function init() {
   scene.add(controller);
 
   window.addEventListener('resize', onWindowResize);
-
   renderer.setAnimationLoop(render);
 
-  // Preload models
+  // Preload GLTF Models
   preloadModel('vase', 'assets/models/vase.glb');
   preloadModel('room', 'assets/models/the_porcelain_room.glb');
 }
@@ -178,29 +167,27 @@ function preloadModel(key, path) {
     path,
     (gltf) => {
       modelCache[key] = gltf.scene;
-      console.log(`✅ Loaded ${path}`);
-      updateHint(`Move your phone to find a flat surface, then tap to place`);
+      console.log(`✅ Model loaded: ${path}`);
     },
     undefined,
-    (error) => {
-      console.error(`❌ Failed to load ${path}`, error);
-      updateHint(`⚠️ Couldn't load ${path.split('/').pop()}`);
-    }
+    (err) => console.error(`❌ Model load error (${path}):`, err)
   );
 }
 
 function makePrefab(type) {
   const source = modelCache[type];
   if (!source) {
-    console.warn(`${type}.glb hasn't loaded yet`);
+    updateHint(`⏳ ${type.toUpperCase()} model is still loading...`);
     return null;
   }
   const group = source.clone(true);
   group.userData.type = type;
+
+  // Normalized scaling based on your assets
   if (type === 'vase') {
-    group.scale.set(0.3, 0.3, 0.3);
+    group.scale.set(0.2, 0.2, 0.2);
   } else if (type === 'room') {
-    group.scale.set(0.06, 0.06, 0.06);
+    group.scale.set(0.04, 0.04, 0.04);
   }
   return group;
 }
@@ -215,43 +202,47 @@ window.resetPlacedObjects = function () {
   placedObjects.forEach(o => scene.remove(o.mesh));
   placedObjects.length = 0;
   selectedForDrag = null;
-  updateHint('Move your phone to find a flat surface, then tap to place');
+  updateHint('Exhibit reset. Tap to place a new artifact');
 };
 
 function onSelect() {
   if (selectedForDrag) {
     selectedForDrag = null;
-    updateHint('Tap to place a new artifact, or tap an existing one to drag it');
+    updateHint('Object dropped. Tap to place or select another');
     return;
   }
 
   const hit = pickPlacedObject();
   if (hit) {
     selectedForDrag = hit;
-    updateHint('Dragging — move your phone, tap again to drop');
+    updateHint('Dragging object... Move phone and tap to drop');
     return;
   }
 
   if (reticle.visible) {
     const prefab = makePrefab(currentArtifactType);
     if (!prefab) return;
+
     prefab.position.setFromMatrixPosition(reticle.matrix);
     scene.add(prefab);
+
     const entry = { mesh: prefab, box3: new THREE.Box3() };
     placedObjects.push(entry);
-    console.log(`✅ Placed ${currentArtifactType}, total: ${placedObjects.length}`);
+    updateHint(`Placed ${currentArtifactType.toUpperCase()}`);
   }
 }
 
 function pickPlacedObject() {
   if (!reticle.visible || placedObjects.length === 0) return null;
-  const p = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
+  const reticlePos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
+  
   let closest = null;
-  let closestDist = 0.15;
+  let minDistance = 0.25;
+
   for (const obj of placedObjects) {
-    const d = obj.mesh.position.distanceTo(p);
-    if (d < closestDist) {
-      closestDist = d;
+    const dist = obj.mesh.position.distanceTo(reticlePos);
+    if (dist < minDistance) {
+      minDistance = dist;
       closest = obj;
     }
   }
@@ -279,13 +270,12 @@ function setCollisionVisual(group, colliding) {
     if (!child.isMesh || !child.material) return;
     const materials = Array.isArray(child.material) ? child.material : [child.material];
     materials.forEach(mat => {
-      if (!mat.color) return;
       if (colliding) {
-        if (mat.userData._origColor === undefined) {
+        if (mat.userData._origColor === undefined && mat.color) {
           mat.userData._origColor = mat.color.getHex();
         }
-        mat.color.setHex(0xd93c3c);
-      } else if (mat.userData._origColor !== undefined) {
+        if (mat.color) mat.color.setHex(0xd93c3c); // Red tint on collision
+      } else if (mat.userData._origColor !== undefined && mat.color) {
         mat.color.setHex(mat.userData._origColor);
       }
     });
