@@ -22,7 +22,6 @@
     inset: 0;
   }
 
-  /* Fullscreen Camera Fix for iOS Safari */
   video, canvas {
     width: 100vw !important;
     height: 100vh !important;
@@ -100,16 +99,12 @@
 
   <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-  <!-- CUSTOM MINDAR IMAGE TARGET (Target Index 0) -->
   <a-entity id="targetEntity" mindar-image-target="targetIndex: 0">
-    
-    <!-- Base Indicator Ring -->
     <a-ring radius-inner="0.30" radius-outer="0.40" 
             rotation="0 0 0" 
             material="color:#c9a13a; opacity:0.6; transparent:true">
     </a-ring>
 
-    <!-- Heritage Artifact Model -->
     <a-entity id="artifact"
               gltf-model="#vase-model"
               position="0 0 0.1"
@@ -118,14 +113,12 @@
               animation="property: rotation; to: 90 360 0; loop: true; dur: 12000; easing: linear">
     </a-entity>
 
-    <!-- Info Label -->
     <a-text id="infoText" 
             value="🏺 Heritage Porcelain Vase\nClassic Ceramic Craftsmanship" 
             color="#f4ecdc" align="center" width="2.5" 
             position="0 0.8 0" visible="false">
     </a-text>
 
-    <!-- Lighting -->
     <a-light type="ambient" intensity="1.2"></a-light>
     <a-light type="directional" intensity="0.8" position="1 2 1"></a-light>
   </a-entity>
@@ -141,7 +134,7 @@ const spinBtn      = document.querySelector('#spinBtn');
 const audioBtn     = document.querySelector('#audioBtn');
 const artifact     = document.querySelector('#artifact');
 
-// Initialize HTML5 Audio object directly in JS for reliable iOS playback
+// Initialize HTML5 Audio
 const sound = new Audio('assets/audio/vase-narration.mp3');
 sound.preload = 'auto';
 
@@ -149,7 +142,15 @@ let infoVisible   = false;
 let rotating      = true;
 let audioEnabled  = false;
 let isMarkerFound = false;
-let audioUnlocked = false;
+
+// Universal Audio Play Helper
+function playNarration() {
+  sound.currentTime = 0;
+  const promise = sound.play();
+  if (promise !== undefined) {
+    promise.catch(err => console.log("Audio playback blocked/waiting:", err));
+  }
+}
 
 function toggleAudio() {
   audioEnabled = !audioEnabled;
@@ -157,20 +158,16 @@ function toggleAudio() {
 
   if (audioEnabled) {
     audioBtn.textContent = '🔊 Sound: On';
-    
-    // Unlock iOS audio context permanently on user tap
-    if (!audioUnlocked) {
-      sound.play().then(() => {
-        audioUnlocked = true;
-        if (!isMarkerFound) {
-          sound.pause();
-          sound.currentTime = 0;
-        }
-      }).catch(err => console.log('Audio unlock waiting for detection:', err));
-    } else if (isMarkerFound) {
-      sound.currentTime = 0;
-      sound.play();
-    }
+
+    // Silent priming step: Unlocks iOS media playback without interrupting flow
+    sound.play().then(() => {
+      if (!isMarkerFound) {
+        sound.pause();
+      } else {
+        playNarration();
+      }
+    }).catch(err => console.log("Unlock error:", err));
+
   } else {
     audioBtn.textContent = '🔊 Sound: Off';
     sound.pause();
@@ -186,8 +183,7 @@ targetEntity.addEventListener("targetFound", () => {
   hint.textContent = '🏺 Displaying Porcelain Vase';
 
   if (audioEnabled) {
-    sound.currentTime = 0;
-    sound.play().catch(error => console.log('Autoplay blocked:', error));
+    playNarration();
   }
 });
 
