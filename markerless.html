@@ -94,14 +94,13 @@
 
 <button id="ar-launch-btn" onclick="triggerAR()">START AR</button>
 
-<!-- 3D & Spatial AR Viewer -->
+<!-- Set Vase as the Default Active Model -->
 <model-viewer 
   id="viewer"
   src="assets/models/vase.glb"
-  ios-src="assets/models/vase.usdz"
-  alt="Heritage Artifact"
+  alt="Heritage Vase"
   ar
-  ar-modes="quick-look scene-viewer webxr"
+  ar-modes="scene-viewer quick-look webxr"
   camera-controls
   auto-rotate
   shadow-intensity="1"
@@ -130,8 +129,9 @@
     document.getElementById('selectVase').classList.toggle('active', type === 'vase');
     document.getElementById('selectRoom').classList.toggle('active', type === 'room');
 
-    // Update 3D model sources
     viewer.src = models[type].glb;
+    
+    // Only attach usdz if file exists on server
     if (models[type].usdz) {
       viewer.setAttribute('ios-src', models[type].usdz);
     } else {
@@ -149,7 +149,6 @@
     }
   }
 
-  // Hide launch button when AR active
   viewer.addEventListener('ar-status', (event) => {
     const launchBtn = document.getElementById('ar-launch-btn');
     if (event.detail.status === 'session-started') {
