@@ -39,6 +39,29 @@
     pointer-events:none; max-width:85%; width: max-content;
   }
 
+  #status-badges {
+    position: absolute;
+    top: 105px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    pointer-events: none;
+  }
+
+  .badge {
+    background: rgba(201, 161, 58, 0.25);
+    color: #c9a13a;
+    border: 1px solid rgba(201, 161, 58, 0.5);
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    backdrop-filter: blur(4px);
+  }
+
   #controls {
     position:absolute; bottom:0; left:0; right:0;
     display:flex; flex-direction:column; align-items:center; gap:10px;
@@ -85,21 +108,6 @@
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     cursor: pointer;
   }
-
-  #auto-light-badge {
-    position: absolute;
-    top: 105px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(201, 161, 58, 0.25);
-    color: #c9a13a;
-    border: 1px solid rgba(201, 161, 58, 0.5);
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-    backdrop-filter: blur(4px);
-  }
 </style>
 </head>
 <body>
@@ -109,10 +117,14 @@
     <a href="index.html">&larr; Home</a>
   </div>
   <div id="hint">Loaded Heritage Vase. Tap START AR to place in real space</div>
-  <div id="auto-light-badge">💡 Auto Color & Exposure Balancing Active</div>
+  
+  <div id="status-badges">
+    <div id="api-badge" class="badge">🌐 REST API: Fetching Live Environmental Data...</div>
+    <div id="auto-light-badge" class="badge">💡 Auto Color & Exposure Balancing Active</div>
+  </div>
 
   <div id="controls">
-    <!-- Manual Fine-Tuning Controls for Shadow & Exposure -->
+    <!-- Manual Fine-Tuning Controls -->
     <div class="row">
       <div class="control-group">
         <label for="shadow">Shadow</label>
@@ -128,12 +140,6 @@
 
 <button id="ar-launch-btn" onclick="triggerAR()">START AR</button>
 
-<!-- 
-  MARKERLESS SPATIAL TRACKING & AUTOMATIC COLOR/LIGHTING BALANCING:
-  - ar: Enables spatial surface placement
-  - tone-mapping="commerce": Maintains true-to-life colors
-  - shadow-intensity & shadow-softness: Ground plane realistic shadow
--->
 <model-viewer 
   id="viewer"
   src="assets/models/vase.glb"
@@ -153,6 +159,7 @@
 <script>
   const viewer = document.getElementById('viewer');
   const exposureInput = document.getElementById('exposure');
+  const apiBadge = document.getElementById('api-badge');
 
   function triggerAR() {
     if (viewer.canActivateAR) {
@@ -162,18 +169,57 @@
     }
   }
 
-  // --- ADVANCED FEATURE 1: Dynamic Shadow Intensity ---
   function updateShadow(val) {
     viewer.shadowIntensity = val;
   }
 
-  // --- ADVANCED FEATURE 2: Exposure Control ---
   function updateExposure(val) {
     viewer.exposure = val;
   }
 
-  // --- ADVANCED FEATURE 3: AUTOMATIC COLOR & LIGHTING BALANCING ---
-  // Automatically detects dark surroundings and increases exposure/brightness dynamically
+  // --- OPTION A (DATA-DRIVEN): REST API INTEGRATION ---
+  // Live weather & solar radiation REST API to dynamically modify 3D environment lighting
+  async function fetchEnvironmentalData() {
+    try {
+      // Default to Colombo coordinates (6.9271, 79.8612) if geolocation unavailable
+      let lat = 6.9271;
+      let lon = 79.8612;
+
+      if (navigator.geolocation) {
+        await new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => { lat = pos.coords.latitude; lon = pos.coords.longitude; resolve(); },
+            () => resolve(),
+            { timeout: 3000 }
+          );
+        });
+      }
+
+      const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+      const data = await response.json();
+      
+      if (data && data.current_weather) {
+        const isDay = data.current_weather.is_day === 1;
+        const temp = data.current_weather.temperature;
+        
+        // Dynamically alter 3D lighting exposure and shadow based on live environment REST API data
+        if (isDay) {
+          viewer.shadowIntensity = 1.2;
+          apiBadge.textContent = `🌐 REST API: Live Day Mode (${temp}°C) — Daylight Lighting Applied`;
+        } else {
+          viewer.shadowIntensity = 0.5;
+          viewer.exposure = 1.5; // Boost exposure for night ambient lighting
+          exposureInput.value = 1.5;
+          apiBadge.textContent = `🌐 REST API: Live Night Mode (${temp}°C) — Night Lighting Applied`;
+        }
+      }
+    } catch (err) {
+      console.log("REST API fetch error, fallback active:", err);
+      apiBadge.textContent = "🌐 REST API: Active (Fallback Mode)";
+    }
+  }
+
+  // --- OPTION B (COMPLEX INTERACTION): AUTOMATIC AMBIENT LUMINANCE BALANCING ---
   function setupAutoLightBalancing() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
 
@@ -196,34 +242,25 @@
             
             let totalLuminance = 0;
             for (let i = 0; i < data.length; i += 4) {
-              // Standard Perceptual Luminance formula
-              const r = data[i];
-              const g = data[i + 1];
-              const b = data[i + 2];
-              totalLuminance += (0.299 * r + 0.587 * g + 0.114 * b);
+              totalLuminance += (0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
             }
 
             const avgLuminance = totalLuminance / (canvas.width * canvas.height);
-            
-            // Invert luminance: Darker rooms (lower luminance) yield higher exposure boosting
-            // Range maps between Exposure 0.8 (bright environment) and 2.2 (dark environment)
             const targetExposure = Math.min(Math.max((1 - (avgLuminance / 255)) * 2.2 + 0.5, 0.8), 2.2);
             
-            // Smoothly adjust exposure
             viewer.exposure = viewer.exposure + (targetExposure - viewer.exposure) * 0.1;
             exposureInput.value = viewer.exposure.toFixed(1);
           }
         }, 300);
       })
-      .catch(err => {
-        console.log("Ambient camera balancing fallback active:", err);
-      });
+      .catch(err => console.log("Ambient camera balancing fallback active:", err));
   }
 
-  // Initialize auto light balancing on page ready
-  window.addEventListener('load', setupAutoLightBalancing);
+  window.addEventListener('load', () => {
+    fetchEnvironmentalData();
+    setupAutoLightBalancing();
+  });
 
-  // Manage UI state during AR Session
   viewer.addEventListener('ar-status', (event) => {
     const launchBtn = document.getElementById('ar-launch-btn');
     if (event.detail.status === 'session-started') {

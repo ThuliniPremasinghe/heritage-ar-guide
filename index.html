@@ -84,33 +84,30 @@
     <p class="eyebrow">INTE 42312 — WebXR / WebAR Assignment</p>
     <h1>Heritage AR Guide</h1>
     <p class="lede">
-      Explore artifacts without touching them. Point your camera at a printed
-      marker to bring an artifact to life, or build your own tabletop exhibit
-      anywhere using your phone's camera and real-world surfaces.
+      Explore historical artifacts interactively. Point your camera at a target marker to anchor digital models, or place artifacts directly on tabletop surfaces in real-world space.
     </p>
 
     <div class="cards">
       <a class="card" href="marker.html">
         <span class="tag">Marker-Based AR</span>
+        <span class="tag">Option A / B</span>
         <h2>Scan the marker</h2>
-        <p>Point your camera at the printed Hiro marker to reveal the Raksha mask with narration-ready audio hooks and animation.</p>
+        <p>Point your camera at the target marker to anchor and view the heritage artifact with physical alignment.</p>
         <span class="go">Launch &rarr;</span>
       </a>
       <a class="card" href="markerless.html">
-        <span class="tag">Markerless AR (WebXR)</span>
-        <h2>Build your exhibit</h2>
-        <p>Detect any flat surface, place the mask and stupa, then drag them into your own arrangement — with collision detection.</p>
+        <span class="tag">Markerless AR</span>
+        <span class="tag">Option A & B</span>
+        <h2>Place in Real Space</h2>
+        <p>Detect flat surfaces using WebXR/ARKit to place the Heritage Vase with live REST API weather lighting and real-time camera exposure balancing.</p>
         <span class="go">Launch &rarr;</span>
       </a>
     </div>
 
     <div class="divider"></div>
     <p class="note">
-      Requires a phone browser with camera access over HTTPS (Chrome on Android
-      is most reliable for both marker tracking and the WebXR hit-test API;
-      iOS Safari supports marker mode but not the WebXR hit-test API used in
-      markerless mode).
-      <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank" rel="noopener">Download / print the Hiro marker</a> before using marker-based mode.
+      Requires a mobile browser with camera access served over HTTPS. Chrome on Android supports WebXR plane tracking, while iOS Safari routes markerless placement through Apple AR Quick Look.
+      <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank" rel="noopener">Download / print the Hiro marker</a> for marker-based mode.
     </p>
   </div>
   <footer>Heritage AR Guide — student project, INTE 42312</footer>
