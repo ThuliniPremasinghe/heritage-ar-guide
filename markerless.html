@@ -121,9 +121,15 @@
   <div id="status-badges">
     <div id="api-badge" class="badge">🌐 REST API: Fetching Live Environmental Data...</div>
     <div id="auto-light-badge" class="badge">💡 Auto Color & Exposure Balancing Active</div>
+    <div id="pedestal-badge" class="badge">🏛️ Stand: Off (Floor Mode)</div>
   </div>
 
   <div id="controls">
+    <!-- OPTION B: Interactive Pedestal Toggle Row -->
+    <div class="row">
+      <button class="pill" id="pedestalBtn" onclick="togglePedestal()">🏛️ Toggle Pedestal Base</button>
+    </div>
+
     <!-- Manual Fine-Tuning Controls -->
     <div class="row">
       <div class="control-group">
@@ -160,12 +166,52 @@
   const viewer = document.getElementById('viewer');
   const exposureInput = document.getElementById('exposure');
   const apiBadge = document.getElementById('api-badge');
+  const pedestalBadge = document.getElementById('pedestal-badge');
+  const pedestalBtn = document.getElementById('pedestalBtn');
+
+  // Asset Configuration
+  const assets = {
+    vaseOnly: {
+      glb: 'assets/models/vase.glb',
+      usdz: 'assets/models/vase.usdz'
+    },
+    vaseWithPedestal: {
+      glb: 'assets/models/vase_with_pedestal.glb', // Combined GLB asset
+      usdz: 'assets/models/vase_with_pedestal.usdz'
+    }
+  };
+
+  let hasPedestal = false;
 
   function triggerAR() {
     if (viewer.canActivateAR) {
       viewer.activateAR();
     } else {
       alert('AR is not supported on this device/browser setup.');
+    }
+  }
+
+  // --- OPTION B (COMPLEX INTERACTION): PEDESTAL TOGGLE & STACKING ---
+  function togglePedestal() {
+    hasPedestal = !hasPedestal;
+    pedestalBtn.classList.toggle('active', hasPedestal);
+
+    if (hasPedestal) {
+      // Load combined asset or apply Y-axis offset
+      viewer.src = assets.vaseWithPedestal.glb;
+      if (assets.vaseWithPedestal.usdz) {
+        viewer.setAttribute('ios-src', assets.vaseWithPedestal.usdz);
+      }
+      pedestalBadge.textContent = "🏛️ Stand: Wooden Pedestal Base Active";
+      document.getElementById('hint').textContent = "Loaded Vase on Pedestal. Tap START AR";
+    } else {
+      // Revert to original standalone vase asset
+      viewer.src = assets.vaseOnly.glb;
+      if (assets.vaseOnly.usdz) {
+        viewer.setAttribute('ios-src', assets.vaseOnly.usdz);
+      }
+      pedestalBadge.textContent = "🏛️ Stand: Off (Floor Mode)";
+      document.getElementById('hint').textContent = "Loaded Heritage Vase. Tap START AR";
     }
   }
 
@@ -178,10 +224,8 @@
   }
 
   // --- OPTION A (DATA-DRIVEN): REST API INTEGRATION ---
-  // Live weather & solar radiation REST API to dynamically modify 3D environment lighting
   async function fetchEnvironmentalData() {
     try {
-      // Default to Colombo coordinates (6.9271, 79.8612) if geolocation unavailable
       let lat = 6.9271;
       let lon = 79.8612;
 
@@ -202,13 +246,12 @@
         const isDay = data.current_weather.is_day === 1;
         const temp = data.current_weather.temperature;
         
-        // Dynamically alter 3D lighting exposure and shadow based on live environment REST API data
         if (isDay) {
           viewer.shadowIntensity = 1.2;
           apiBadge.textContent = `🌐 REST API: Live Day Mode (${temp}°C) — Daylight Lighting Applied`;
         } else {
           viewer.shadowIntensity = 0.5;
-          viewer.exposure = 1.5; // Boost exposure for night ambient lighting
+          viewer.exposure = 1.5;
           exposureInput.value = 1.5;
           apiBadge.textContent = `🌐 REST API: Live Night Mode (${temp}°C) — Night Lighting Applied`;
         }
@@ -219,7 +262,7 @@
     }
   }
 
-  // --- OPTION B (COMPLEX INTERACTION): AUTOMATIC AMBIENT LUMINANCE BALANCING ---
+  // --- AUTOMATIC AMBIENT LUMINANCE BALANCING ---
   function setupAutoLightBalancing() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
 
@@ -268,7 +311,7 @@
       document.getElementById('hint').textContent = "Scanning surface... Move camera slowly";
     } else if (event.detail.status === 'not-presenting') {
       launchBtn.style.display = 'block';
-      document.getElementById('hint').textContent = "Loaded Heritage Vase. Tap START AR to place in real space";
+      document.getElementById('hint').textContent = hasPedestal ? "Loaded Vase on Pedestal. Tap START AR" : "Loaded Heritage Vase. Tap START AR";
     }
   });
 </script>
