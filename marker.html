@@ -96,7 +96,6 @@
 >
   <a-assets>
     <a-asset-item id="vase-model" src="assets/models/vase.glb"></a-asset-item>
-    <audio id="heritageSound" src="assets/audio/vase-narration.mp3" preload="auto" playsinline webkit-playsinline></audio>
   </a-assets>
 
   <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
@@ -141,12 +140,16 @@ const infoBtn      = document.querySelector('#infoBtn');
 const spinBtn      = document.querySelector('#spinBtn');
 const audioBtn     = document.querySelector('#audioBtn');
 const artifact     = document.querySelector('#artifact');
-const sound        = document.querySelector('#heritageSound');
+
+// Initialize HTML5 Audio object directly in JS for reliable iOS playback
+const sound = new Audio('assets/audio/vase-narration.mp3');
+sound.preload = 'auto';
 
 let infoVisible   = false;
 let rotating      = true;
 let audioEnabled  = false;
 let isMarkerFound = false;
+let audioUnlocked = false;
 
 function toggleAudio() {
   audioEnabled = !audioEnabled;
@@ -154,12 +157,20 @@ function toggleAudio() {
 
   if (audioEnabled) {
     audioBtn.textContent = '🔊 Sound: On';
-    sound.play().then(() => {
-      if (!isMarkerFound) {
-        sound.pause();
-        sound.currentTime = 0;
-      }
-    }).catch(err => console.log('Audio unlock error:', err));
+    
+    // Unlock iOS audio context permanently on user tap
+    if (!audioUnlocked) {
+      sound.play().then(() => {
+        audioUnlocked = true;
+        if (!isMarkerFound) {
+          sound.pause();
+          sound.currentTime = 0;
+        }
+      }).catch(err => console.log('Audio unlock waiting for detection:', err));
+    } else if (isMarkerFound) {
+      sound.currentTime = 0;
+      sound.play();
+    }
   } else {
     audioBtn.textContent = '🔊 Sound: Off';
     sound.pause();
@@ -187,9 +198,7 @@ targetEntity.addEventListener("targetLost", () => {
   status.className = '';
   hint.textContent = '🔍 Point camera at your custom photo';
 
-  if (audioEnabled) {
-    sound.pause();
-  }
+  sound.pause();
 });
 
 function toggleInfo() {
