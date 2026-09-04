@@ -59,6 +59,7 @@
   </div>
   <div id="hint">🔍 Scan the printed square HIRO marker pattern</div>
   <div id="controls">
+    <button id="audioBtn" class="pill" onclick="toggleAudio()">🔊 Sound: Off</button>
     <button id="infoBtn" class="pill" onclick="toggleInfo()">ℹ️ Artifact Info</button>
     <button id="spinBtn" class="pill active" onclick="toggleSpin()">🔄 Auto-Rotate</button>
   </div>
@@ -72,6 +73,8 @@
 >
   <a-assets>
     <a-asset-item id="vase-model" src="assets/models/vase.glb"></a-asset-item>
+    <!-- Updated audio path to match VS Code file structure -->
+    <audio id="heritageSound" src="assets/audio/mask-narration.mp3" preload="auto" playsinline></audio>
   </a-assets>
 
   <!-- MARKER TRACKING -->
@@ -107,28 +110,64 @@
 </a-scene>
 
 <script>
-const marker   = document.querySelector('#hiroMarker');
-const status   = document.querySelector('#status');
-const hint     = document.querySelector('#hint');
-const infoText = document.querySelector('#infoText');
-const infoBtn  = document.querySelector('#infoBtn');
-const spinBtn  = document.querySelector('#spinBtn');
-const artifact = document.querySelector('#artifact');
+const marker    = document.querySelector('#hiroMarker');
+const status    = document.querySelector('#status');
+const hint      = document.querySelector('#hint');
+const infoText  = document.querySelector('#infoText');
+const infoBtn   = document.querySelector('#infoBtn');
+const spinBtn   = document.querySelector('#spinBtn');
+const audioBtn  = document.querySelector('#audioBtn');
+const artifact  = document.querySelector('#artifact');
+const sound     = document.querySelector('#heritageSound');
 
-let infoVisible = false;
-let rotating = true;
+let infoVisible  = false;
+let rotating     = true;
+let audioEnabled = false;
+let isMarkerFound = false;
+
+// Toggle Audio Permission for iOS/Android
+function toggleAudio() {
+  audioEnabled = !audioEnabled;
+  audioBtn.classList.toggle('active', audioEnabled);
+
+  if (audioEnabled) {
+    audioBtn.textContent = '🔊 Sound: On';
+    // Initialize/unlock audio on user tap
+    sound.play().then(() => {
+      if (!isMarkerFound) {
+        sound.pause();
+        sound.currentTime = 0;
+      }
+    }).catch(err => console.log('Audio init prevented:', err));
+  } else {
+    audioBtn.textContent = '🔊 Sound: Off';
+    sound.pause();
+    sound.currentTime = 0;
+  }
+}
 
 // Marker Event Handlers
 marker.addEventListener('markerFound', () => {
+  isMarkerFound = true;
   status.textContent = '✅ Marker detected!';
   status.className = 'found';
   hint.textContent = '🏺 Displaying Porcelain Vase';
+
+  if (audioEnabled) {
+    sound.currentTime = 0;
+    sound.play().catch(e => console.log('Autoplay blocked:', e));
+  }
 });
 
 marker.addEventListener('markerLost', () => {
+  isMarkerFound = false;
   status.textContent = '🎯 Point at HIRO marker';
   status.className = '';
   hint.textContent = '🔍 Scan the printed square HIRO marker pattern';
+
+  if (audioEnabled) {
+    sound.pause();
+  }
 });
 
 function toggleInfo() {
@@ -147,8 +186,9 @@ function toggleSpin() {
   }
 }
 
-window.toggleInfo = toggleInfo;
-window.toggleSpin = toggleSpin;
+window.toggleAudio = toggleAudio;
+window.toggleInfo  = toggleInfo;
+window.toggleSpin  = toggleSpin;
 </script>
 </body>
 </html>
