@@ -81,7 +81,7 @@
 >
   <a-assets>
     <a-asset-item id="vase-model" src="assets/models/vase.glb"></a-asset-item>
-    <!-- Audio element with crossOrigin & WebKit iOS attributes -->
+    <!-- Updated audio asset path -->
     <audio id="heritageSound" src="assets/audio/vase-narration.mp3" preload="auto" playsinline webkit-playsinline></audio>
   </a-assets>
 
@@ -133,7 +133,7 @@ let rotating     = true;
 let audioEnabled = false;
 let isMarkerFound = false;
 
-// iOS Camera Stream Video Fix (Inject inline attributes to raw video element)
+// iOS Camera Stream Video Fix
 window.addEventListener('camera-init', () => {
   const video = document.querySelector('video');
   if (video) {
@@ -142,7 +142,7 @@ window.addEventListener('camera-init', () => {
   }
 });
 
-// Sound Toggle Optimized for iOS WebAudio unlocking
+// Sound Toggle for mobile browsers
 function toggleAudio() {
   audioEnabled = !audioEnabled;
   audioBtn.classList.toggle('active', audioEnabled);
@@ -150,14 +150,14 @@ function toggleAudio() {
   if (audioEnabled) {
     audioBtn.textContent = '🔊 Sound: On';
     
-    // Unlock iOS Audio Context instantly
+    // Unlock WebAudio context on user click
     sound.play().then(() => {
       if (!isMarkerFound) {
         sound.pause();
         sound.currentTime = 0;
       }
     }).catch(err => {
-      console.log('iOS Audio unlock error:', err);
+      console.log('Audio unlock error:', err);
     });
   } else {
     audioBtn.textContent = '🔊 Sound: Off';
@@ -177,7 +177,7 @@ marker.addEventListener('markerFound', () => {
     sound.currentTime = 0;
     const playPromise = sound.play();
     if (playPromise !== undefined) {
-      playPromise.catch(error => console.log('Autoplay blocked by iOS:', error));
+      playPromise.catch(error => console.log('Autoplay blocked:', error));
     }
   }
 });
