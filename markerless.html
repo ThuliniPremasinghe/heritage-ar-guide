@@ -176,7 +176,7 @@
       usdz: 'assets/models/vase.usdz'
     },
     vaseWithPedestal: {
-      glb: 'assets/models/pedestal.glb', // Combined GLB asset
+      glb: 'assets/models/pedestal.glb',
       usdz: 'assets/models/pedestal.usdz'
     }
   };
@@ -191,25 +191,37 @@
     }
   }
 
-  // --- OPTION B (COMPLEX INTERACTION): PEDESTAL TOGGLE & STACKING ---
+  // --- iOS-COMPATIBLE PEDESTAL TOGGLE FUNCTION ---
   function togglePedestal() {
     hasPedestal = !hasPedestal;
     pedestalBtn.classList.toggle('active', hasPedestal);
 
+    const targetAsset = hasPedestal ? assets.vaseWithPedestal : assets.vaseOnly;
+
+    // 1. Update 3D viewer properties
+    viewer.src = targetAsset.glb;
+    
+    if (targetAsset.usdz) {
+      viewer.setAttribute('ios-src', targetAsset.usdz);
+
+      // 2. Force iOS Quick Look anchor link refresh inside model-viewer Shadow DOM
+      const updateiOSAnchor = () => {
+        const arLink = viewer.shadowRoot ? viewer.shadowRoot.querySelector('a#ar-link') : null;
+        if (arLink) {
+          arLink.setAttribute('href', targetAsset.usdz);
+        }
+      };
+
+      updateiOSAnchor();
+      // Retry shortly after to ensure model-viewer has processed attribute mutation
+      setTimeout(updateiOSAnchor, 100);
+    }
+
+    // 3. Update UI feedback
     if (hasPedestal) {
-      // Load combined asset or apply Y-axis offset
-      viewer.src = assets.vaseWithPedestal.glb;
-      if (assets.vaseWithPedestal.usdz) {
-        viewer.setAttribute('ios-src', assets.vaseWithPedestal.usdz);
-      }
       pedestalBadge.textContent = "🏛️ Stand: Wooden Pedestal Base Active";
       document.getElementById('hint').textContent = "Loaded Vase on Pedestal. Tap START AR";
     } else {
-      // Revert to original standalone vase asset
-      viewer.src = assets.vaseOnly.glb;
-      if (assets.vaseOnly.usdz) {
-        viewer.setAttribute('ios-src', assets.vaseOnly.usdz);
-      }
       pedestalBadge.textContent = "🏛️ Stand: Off (Floor Mode)";
       document.getElementById('hint').textContent = "Loaded Heritage Vase. Tap START AR";
     }
@@ -223,7 +235,7 @@
     viewer.exposure = val;
   }
 
-  // --- OPTION A (DATA-DRIVEN): REST API INTEGRATION ---
+  // --- REST API INTEGRATION ---
   async function fetchEnvironmentalData() {
     try {
       let lat = 6.9271;
