@@ -191,7 +191,7 @@
     }
   }
 
-  // --- iOS-COMPATIBLE PEDESTAL TOGGLE FUNCTION ---
+  // --- UPDATED iOS-COMPATIBLE PEDESTAL TOGGLE FUNCTION ---
   function togglePedestal() {
     hasPedestal = !hasPedestal;
     pedestalBtn.classList.toggle('active', hasPedestal);
@@ -202,22 +202,25 @@
     viewer.src = targetAsset.glb;
     
     if (targetAsset.usdz) {
-      viewer.setAttribute('ios-src', targetAsset.usdz);
+      // Append cache buster parameter to clear iOS Quick Look asset cache
+      const cacheBustUsdz = `${targetAsset.usdz}#allowsContentScaling=0&v=${Date.now()}`;
+      
+      // Update element attribute
+      viewer.setAttribute('ios-src', cacheBustUsdz);
 
-      // 2. Force iOS Quick Look anchor link refresh inside model-viewer Shadow DOM
+      // Force shadow DOM Quick Look link refresh
       const updateiOSAnchor = () => {
         const arLink = viewer.shadowRoot ? viewer.shadowRoot.querySelector('a#ar-link') : null;
         if (arLink) {
-          arLink.setAttribute('href', targetAsset.usdz);
+          arLink.setAttribute('href', cacheBustUsdz);
         }
       };
 
       updateiOSAnchor();
-      // Retry shortly after to ensure model-viewer has processed attribute mutation
-      setTimeout(updateiOSAnchor, 100);
+      setTimeout(updateiOSAnchor, 150);
     }
 
-    // 3. Update UI feedback
+    // 2. Update UI feedback
     if (hasPedestal) {
       pedestalBadge.textContent = "🏛️ Stand: Wooden Pedestal Base Active";
       document.getElementById('hint').textContent = "Loaded Vase on Pedestal. Tap START AR";
